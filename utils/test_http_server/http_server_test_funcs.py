@@ -1,18 +1,20 @@
-import ipaddress
 import requests
 import logging
-import sys
+import json
 from datetime import datetime
+import time
 
-# admin_valid = '{"connect_ip":"10.24.230.10","connect_key":"01234567890123456789","connect_name":"P3D"}'
-# admin_not_valid_ip = '{"connect_ip":"1000.24.230.10","connect_key":"11234567890123456789","connect_name":"PRUSA3D"}'
-# admin_longer_str = '{"connect_ip":"10.24.230.10","connect_key":"11114567890123456789123456","connect_name":"PRUSA3D01234567890123456789"}'
+# FUTURE TESTS IDEAS:
+# admin valid: '{"connect_ip":"10.24.230.10","connect_key":"01234567890123456789","connect_name":"P3D"}'
+# admin not valid ip: '{"connect_ip":"1000.24.230.10","connect_key":"11234567890123456789","connect_name":"PRUSA3D"}'
+# admin longer str: '{"connect_ip":"10.24.230.10","connect_key":"11114567890123456789123456","connect_name":"PRUSA3D01234567890123456789"}'
 
 # global variables
 IP_ADDR = ""
 test_cnt = 0
 tests_off = 0
-json_tests = {}
+test_curr = 0
+json_tests = []
 
 # gcode structures
 G_AUTOHOME = {"command":"G28"}
@@ -25,18 +27,22 @@ def init(ip_addr):
     IP_ADDR = 'http://' + ip_addr
 
     # load JSON tests
-    json_file = open("/server_tests/tests.json", "r")
+    json_file = open("server_tests/tests.json", "r")
     json_obj = json.load(json_file)
     json_file.close()
 
     json_tests = json_obj['tests']
+    disabled_tests = []
 
     # disable switched off tests
     for test in json_tests:
         if "switch" in test:
             if "off" in test["switch"]:
-                json_tests.remove(test)
+                disabled_tests.append(test)
     
+    for test in disabled_tests:
+        json_tests.remove(test)
+
     if len(json_tests) == 0:
         print("All tests switched off")
     
@@ -58,32 +64,33 @@ def test_loop():
         time.sleep(1)
 
 def test():
-    global json_tests
-
-    # parse name of the current test
-    name = json_tests[test_curr]['name']
+    global json_tests, test_curr
 
     # send request according to test request data
-    result_dic = send_request(name)
+    result_dic = send_request()
     if len(result_dic) != 0:
         # test response 
         test_response(result_dic)
 
     # set up next test
     if (test_curr + 1) >= test_cnt :
-            test_curr = 0
-            off_test_cnt = 0
-        else:
-            test_curr += 1
+        test_curr = 0
+        off_test_cnt = 0
+    else:
+        test_curr += 1
 
-def send_request(name):
+def send_request():
     global test_curr, test_cnt, json_tests, IP_ADDR
+    
+    test = json_tests[test_curr]
+    # parse name of the current test
+    name = test['name']
     
     headers = {}
     res_dic = {}
-    test_header = json_tests[test_curr]['request']['header']
+    test_header = test['request']['header']
     # parse url
-    ip_addr = IP_ADDR + json_tests[test_curr]['uri']
+    ip_addr = IP_ADDR + test_header['uri']
 
     # load token to header if we require it in test request data
     if 'token' in test_header:
@@ -92,19 +99,21 @@ def send_request(name):
     # send GET request
     if 'GET' in test_header['method']:
         if len(headers) != 0:
-            response = requests.get(url = ip_addr, headers = headers)
+            response = requests.get(url = ip_addr, headers = headers, verify=False, timeout=2)
         else:
-            response = requests.get(url = ip_addr)
+            response = requests.get(url = ip_addr, verify=False, timeout=2)
     # send POST request
     elif 'POST' in test_header['method']:
         if len(headers) != 0:
-            response = requests.post(url = ip_addr, headers = headers, json = json_tests['request']['body'])
+            response = requests.post(url = ip_addr, headers = headers, json = test['request']['body'], verify=False, timeout=2)
         else:
-            response = requests.post(url = ip_addr, json = json_tests['request']['body'])
+            response = requests.post(url = ip_addr, json = test['request']['body'], verify=False, timeout=2)
     else:
-        test_failed(str(json_tests[test_curr]), name + "has unsupported test method...")
+        test_failed(str(test), name + "has unsupported test method...")
         return {}
 
+    if len(response.text) == 0:
+        return {}
     # every response should be in JSON structure
     try:
         res_dic = response.json()

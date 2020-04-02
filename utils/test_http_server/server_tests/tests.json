@@ -2,7 +2,7 @@
     "tests":
     [
         {
-            "switch": "off",
+            "switch": "on",
             "name": "Valid GCODE Autohome",
             "request":
             {
