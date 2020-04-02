@@ -45,16 +45,31 @@ def init(ip_addr):
     # logging init
     logging.basicConfig(filename='server_tests/errors.log', filemode='w', level=logging.ERROR)
 
+# infinite testing loop
+# if all tests in tests.json are switched off, it tests only telemetry
 def test_loop():
+    global test_cnt
+
+    while 1:
+        test_get_telemetry()
+        if test_cnt != 0:
+            test()
+
+        time.sleep(1)
+
+def test():
     global json_tests
 
-    
+    # parse name of the current test
     name = json_tests[test_curr]['name']
 
+    # send request according to test request data
     result_dic = send_request(name)
     if len(result_dic) != 0:
+        # test response 
         test_response(result_dic)
 
+    # set up next test
     if (test_curr + 1) >= test_cnt :
             test_curr = 0
             off_test_cnt = 0
@@ -64,28 +79,33 @@ def test_loop():
 def send_request(name):
     global test_curr, test_cnt, json_tests, IP_ADDR
     
-    test_header = json_tests[test_curr]['request']['header']
     headers = {}
     res_dic = {}
+    test_header = json_tests[test_curr]['request']['header']
+    # parse url
     ip_addr = IP_ADDR + json_tests[test_curr]['uri']
 
+    # load token to header if we require it in test request data
     if 'token' in test_header:
         headers.update({"Printer-Token" : str(test_header['token'])})
 
+    # send GET request
     if 'GET' in test_header['method']:
         if len(headers) != 0:
             response = requests.get(url = ip_addr, headers = headers)
         else:
             response = requests.get(url = ip_addr)
+    # send POST request
     elif 'POST' in test_header['method']:
         if len(headers) != 0:
             response = requests.post(url = ip_addr, headers = headers, json = json_tests['request']['body'])
         else:
             response = requests.post(url = ip_addr, json = json_tests['request']['body'])
     else:
-        test_failed(str(json_tests[test_curr]), name + " has unsupported test method...")
+        test_failed(str(json_tests[test_curr]), name + "has unsupported test method...")
         return {}
 
+    # every response should be in JSON structure
     try:
         res_dic = response.json()
     except ValueError:
@@ -94,9 +114,12 @@ def send_request(name):
     
     return res_dic
 
+# testing printer's response to request
 def test_response(result_dic):
+    # no responses known yet
     pass
 
+# testing telemetry for local page
 def test_get_telemetry():
     response = requests.get(IP_ADDR + "/api/telemetry")
     try:
@@ -107,6 +130,7 @@ def test_get_telemetry():
 
     test_telemetry_response(res_dic)
 
+# testing response from printer to local page
 def test_telemetry_response(response_dic):
     
     if 'temp_nozzle' not in response_dic or not isinstance(response_dic['temp_nozzle'], int):
