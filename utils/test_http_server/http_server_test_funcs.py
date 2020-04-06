@@ -4,21 +4,12 @@ import json
 from datetime import datetime
 import time
 
-# FUTURE TESTS IDEAS:
-# admin valid: '{"connect_ip":"10.24.230.10","connect_key":"01234567890123456789","connect_name":"P3D"}'
-# admin not valid ip: '{"connect_ip":"1000.24.230.10","connect_key":"11234567890123456789","connect_name":"PRUSA3D"}'
-# admin longer str: '{"connect_ip":"10.24.230.10","connect_key":"11114567890123456789123456","connect_name":"PRUSA3D01234567890123456789"}'
-
 # global variables
 IP_ADDR = ""
 test_cnt = 0
 tests_off = 0
 test_curr = 0
 json_tests = []
-
-# gcode structures
-G_AUTOHOME = {"command":"G28"}
-G_MOVES = {"command":"G1 X50 Y100", "command":"G1 X100 Y50", "command":"G1 X60 Y90", "command":"G1 X100 Y50", "command":"G1 X70 Y80"}
 
 def init(ip_addr):
     global json_tests, test_cnt, IP_ADDR
@@ -109,7 +100,7 @@ def send_request():
         else:
             response = requests.post(url = ip_addr, json = test['request']['body'], verify=False, timeout=2)
     else:
-        test_failed(str(test), name + "has unsupported test method...")
+        test_failed(str(test), name + " has unsupported test method...")
         return {}
 
     if len(response.text) == 0:
@@ -143,23 +134,17 @@ def test_get_telemetry():
 def test_telemetry_response(response_dic):
     
     if 'temp_nozzle' not in response_dic or not isinstance(response_dic['temp_nozzle'], int):
-        test_failed(str(response_dic), "Telemetry")
-        return
+        test_failed(str(response_dic), "temp_nozzel in Telemetry")
     if 'temp_bed' not in response_dic or not isinstance(response_dic['temp_bed'], int):
-        test_failed(str(response_dic), "Telemetry")
-        return
+        test_failed(str(response_dic), "temp_bed in Telemetry")
     if 'material' not in response_dic or not isinstance(response_dic['material'], str):
-        test_failed(str(response_dic), "Telemetry")
-        return
+        test_failed(str(response_dic), "material in Telemetry")
     if 'pos_z_mm' not in response_dic or not isinstance(response_dic['pos_z_mm'], float):
-        test_failed(str(response_dic), "Telemetry")
-        return
+        test_failed(str(response_dic), "pos_z_mm in Telemetry")
     if 'printing_speed' not in response_dic or not isinstance(response_dic['printing_speed'], int):
-        test_failed(str(response_dic), "Telemetry")
-        return
+        test_failed(str(response_dic), "printing_speed in Telemetry")
     if 'flow_factor' not in response_dic or not isinstance(response_dic['flow_factor'], int):
-        test_failed(str(response_dic), "Telemetry")
-        return
+        test_failed(str(response_dic), "flow_factor in Telemetry")
 
 # if test fails it logs the info in error output file "connect_tests_results.txt"
 def test_failed(data, name):
