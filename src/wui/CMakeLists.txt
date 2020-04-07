@@ -15,7 +15,7 @@ add_library(
   progress_data_wrapper.cpp
   lwip.c
   ethernetif.c
-  sntp_handle.c
+  sntp_handler.c
 )
 
 target_include_directories(
