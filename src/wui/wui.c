@@ -14,7 +14,7 @@
 #include "http_client.h"
 #include "eeprom.h"
 #include <string.h>
-#include "sntp_handler.h"
+#include "sntp_client.h"
 
 #define MAX_WUI_REQUEST_LEN    100
 #define MAX_MARLIN_REQUEST_LEN 100
@@ -100,7 +100,7 @@ void StartWebServerTask(void const *argument) {
 
     MX_LWIP_Init();
     http_server_init();
-    sntp_buddy_init();
+    sntp_client_init();
     for (;;) {
         ethernetif_link(&eth0);
         wui_queue_cycle();

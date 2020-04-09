@@ -15,7 +15,8 @@ add_library(
   progress_data_wrapper.cpp
   lwip.c
   ethernetif.c
-  sntp_handler.c
+  sntp/sntp_client.c
+  sntp/sntp.c
 )
 
 target_include_directories(
@@ -23,6 +24,7 @@ target_include_directories(
   PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}
     http
+    sntp
     resources
 )
 

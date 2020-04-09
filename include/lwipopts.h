@@ -150,7 +150,8 @@ extern "C" {
     #define LWIP_HTTPD_SUPPORT_POST    1
     #define HTTPD_SERVER_AGENT         "Prusa Buddy"
     #define LWIP_DNS                   1
-    //#define SNTP_SET_SYSTEM_TIME(secs) sntp_set_system_time(secs)
+    #define SNTP_CUSTOM_SET_SYS_TIME   1
+    #define SNTP_CUSTOM_HEADER         "sntp_client.h"
 
 /* USER CODE END 1 */
 
