@@ -15,6 +15,7 @@ add_library(
   progress_data_wrapper.cpp
   lwip.c
   ethernetif.c
+  netif_settings.c
 )
 
 target_include_directories(
