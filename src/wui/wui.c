@@ -15,6 +15,8 @@
 #include "eeprom.h"
 #include <string.h>
 #include "dbg.h"
+#include "netif_settings.h"
+#include "ini_handler.h"
 
 #define MAX_WUI_REQUEST_LEN    100
 #define MAX_MARLIN_REQUEST_LEN 100
@@ -112,6 +114,20 @@ void StartWebServerTask(void const *argument) {
     // LwIP related initalizations
     MX_LWIP_Init();
     http_server_init();
+#ifdef BUDDY_ENABLE_INI_LOAD_AFTER_START
+    networkconfig_t config;
+    config.lan.flg = netconfig.lan.flg;
+    config.set_flg = 0;
+    if(ini_load_file(&config)){
+        if(set_loaded_netconfig(&config)){
+            // SUCCESS
+        } else {
+            // FAIL: wrong config data
+        }
+    } else {
+        //FAIL: read error
+    }
+#endif //BUDDY_ENABLE_INI_LOAD_AFTER_START
 
 #ifdef BUDDY_ENABLE_CONNECT
     buddy_httpc_handler_init();

@@ -121,62 +121,17 @@ static uint8_t save_config(void) {
     return ini_save_file(ini_file_str);
 }
 
-static int ini_load_handler(void *user, const char *section, const char *name, const char *value) {
-    networkconfig_t *tmp_config = (networkconfig_t *)user;
-#define MATCH(s, n) strcmp(section, s) == 0 && strcmp(name, n) == 0
-    if (MATCH("lan_ip4", "type")) {
-        if (strncmp(value, "DHCP", 4) == 0 || strncmp(value, "dhcp", 4) == 0) {
-            CHANGE_LAN_TO_DHCP(tmp_config->lan.flg);
-            tmp_config->set_flg |= NETVAR_MSK(NETVAR_LAN_FLAGS);
-        } else if (strncmp(value, "STATIC", 6) == 0 || strncmp(value, "static", 6) == 0) {
-            CHANGE_LAN_TO_STATIC(tmp_config->lan.flg);
-            tmp_config->set_flg |= NETVAR_MSK(NETVAR_LAN_FLAGS);
-        }
-    } else if (MATCH("lan_ip4", "hostname")) {
-        strlcpy(tmp_config->hostname, value, LAN_HOSTNAME_MAX_LEN + 1);
-        tmp_config->hostname[LAN_HOSTNAME_MAX_LEN] = '\0';
-        tmp_config->set_flg |= NETVAR_MSK(NETVAR_HOSTNAME);
-    } else if (MATCH("lan_ip4", "address")) {
-        if (ip4addr_aton(value, &tmp_config->lan.addr_ip4)) {
-            tmp_config->set_flg |= NETVAR_MSK(NETVAR_LAN_IP4_ADDR);
-        }
-    } else if (MATCH("lan_ip4", "mask")) {
-        if (ip4addr_aton(value, &tmp_config->lan.msk_ip4)) {
-            tmp_config->set_flg |= NETVAR_MSK(NETVAR_LAN_IP4_MSK);
-        }
-    } else if (MATCH("lan_ip4", "gateway")) {
-        if (ip4addr_aton(value, &tmp_config->lan.gw_ip4)) {
-            tmp_config->set_flg |= NETVAR_MSK(NETVAR_LAN_IP4_GW);
-        }
-    }
-#ifdef BUDDY_ENABLE_CONNECT
-    else if (MATCH("connect", "address")) {
-        if (ip4addr_aton(value, &tmp_config->connect.ip4)) {
-            tmp_config->set_flg |= NETVAR_MSK(NETVAR_CONNECT_IP4);
-        }
-    } else if (MATCH("connect", "token")) {
-        strlcpy(tmp_config->connect.token, value, CONNECT_TOKEN_SIZE + 1);
-        tmp_config->connect.token[CONNECT_TOKEN_SIZE] = '\0';
-        tmp_config->set_flg |= NETVAR_MSK(NETVAR_CONNECT_TOKEN);
-    }
-#endif // BUDDY_ENABLE_CONNECT
-    else {
-        return 0; /* unknown section/name, error */
-    }
-    return 1;
-}
-
 static uint8_t load_config(void) {
 
     networkconfig_t tmp_config;
     tmp_config.lan.flg = netconfig.lan.flg;
     tmp_config.set_flg = 0;
 
-    if (ini_load_file(ini_load_handler, &tmp_config) == 0) {
+    if (ini_load_file(&tmp_config)) {
+        return set_loaded_netconfig(&tmp_config);
+    } else {
         return 0;
     }
-    
-    return set_loaded_netconfig(&tmp_config);
 }
 static int screen_lan_settings_event(screen_t *screen, window_t *window,
     uint8_t event, void *param) {
