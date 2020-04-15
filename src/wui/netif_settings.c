@@ -2,6 +2,7 @@
 #include "eeprom.h"
 #include "lwip/dhcp.h"
 #include "lwip/netifapi.h"
+#include <string.h>
 
 #define MAX_UINT16  65535
 #define MAC_ADDR_START    0x1FFF781A //MM:MM:MM:SS:SS:SS
@@ -18,8 +19,8 @@ static char s_connect_ip4[IP4_ADDR_STR_SIZE] = { 0 };
 
 const char * mac_addr_str(void) { return s_mac_addr_str; }
 const char * addr_ip4_str(void) { return s_addr_ip4_str; }
-const char * msk_ip4_str(void) { return s_addr_ip4_str; }
-const char * gw_ip4_str(void) { return s_addr_ip4_str; }
+const char * msk_ip4_str(void) { return s_msk_ip4_str; }
+const char * gw_ip4_str(void) { return s_gw_ip4_str; }
 const char * connect_ip4_str(void) { return s_connect_ip4; }
 static void parse_MAC_addr(void) {
     volatile uint8_t mac_addr[] = { 0, 0, 0, 0, 0, 0 };
@@ -74,6 +75,9 @@ uint8_t set_loaded_netconfig(networkconfig_t * tmp_config){
             eeprom_set_var(EEVAR_LAN_IP4_ADDR, variant8_ui32(tmp_config->lan.addr_ip4.addr));
             eeprom_set_var(EEVAR_LAN_IP4_MSK, variant8_ui32(tmp_config->lan.msk_ip4.addr));
             eeprom_set_var(EEVAR_LAN_IP4_GW, variant8_ui32(tmp_config->lan.gw_ip4.addr));
+            netconfig.lan.addr_ip4.addr = tmp_config->lan.addr_ip4.addr;
+            netconfig.lan.msk_ip4.addr = tmp_config->lan.msk_ip4.addr;
+            netconfig.lan.gw_ip4.addr = tmp_config->lan.gw_ip4.addr;
         }
     }
     if (tmp_config->set_flg & NETVAR_MSK(NETVAR_HOSTNAME)) {
@@ -85,11 +89,13 @@ uint8_t set_loaded_netconfig(networkconfig_t * tmp_config){
     }
 #ifdef BUDDY_ENABLE_CONNECT
     if (tmp_config->set_flg & NETVAR_MSK(NETVAR_CONNECT_TOKEN)) {
+        strlcpy(netconfig.connect.token, tmp_config->connect.token, CONNECT_TOKEN_SIZE + 1);
         variant8_t token = variant8_pchar(tmp_config->connect.token, 0, 0);
         eeprom_set_var(EEVAR_CONNECT_TOKEN, token);
         //variant8_done() is not called, variant_pchar with init flag 0 doesnt hold its memory
     }
     if (tmp_config->set_flg & NETVAR_MSK(NETVAR_CONNECT_IP4)) {
+        netconfig.connect.ip4.addr = tmp_config->connect.ip4.addr;
         eeprom_set_var(EEVAR_CONNECT_IP4, variant8_ui32(tmp_config->connect.ip4.addr));
     }
 #endif // BUDDY_ENABLE_CONNECT
@@ -122,7 +128,6 @@ static void update_addrs(uint8_t lan_flg){
         netconfig.lan.addr_ip4.addr = 0;
         netconfig.lan.msk_ip4.addr = 0;
         netconfig.lan.gw_ip4.addr = 0;
-
         return;
     }
     netconfig.lan.addr_ip4.addr = eeprom_get_var(EEVAR_LAN_IP4_ADDR).ui32;
@@ -130,7 +135,7 @@ static void update_addrs(uint8_t lan_flg){
     netconfig.lan.gw_ip4.addr = eeprom_get_var(EEVAR_LAN_IP4_GW).ui32;
 }
 
-uint8_t update_netconfig(uint32_t msk){
+void update_netconfig(uint32_t msk){
 
     if(msk & NETVAR_MSK(NETVAR_LAN_FLAGS)){
         netconfig.lan.flg = eeprom_get_var(EEVAR_LAN_FLAG).ui8;

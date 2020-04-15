@@ -7,6 +7,9 @@
 #define NETVAR_STATIC_LAN_ADDRS \
     (NETVAR_MSK(NETVAR_LAN_IP4_ADDR) | NETVAR_MSK(NETVAR_LAN_IP4_MSK) | NETVAR_MSK(NETVAR_LAN_IP4_GW))
 
+#define NETVAR_EEPROM_CONFIG \
+    (NETVAR_STATIC_LAN_ADDRS | NETVAR_MSK(NETVAR_LAN_FLAGS) | NETVAR_MSK(NETVAR_HOSTNAME) | NETVAR_MSK(NETVAR_CONNECT_IP4) | NETVAR_MSK(NETVAR_CONNECT_TOKEN))
+
 #define CHANGE_LAN_TO_STATIC(flg)   (flg |= LAN_MSK_TYPE)   // flip lan type flg to STATIC
 #define CHANGE_LAN_TO_DHCP(flg)     (flg &= ~LAN_MSK_TYPE)   // flip lan type flg to DHCP
 #define TURN_LAN_OFF(flg)           (flg |= LAN_MSK_ONOFF)   // flip lan switch flg to OFF
@@ -39,9 +42,7 @@ typedef struct {
 
 typedef struct {
     char hostname[LAN_HOSTNAME_MAX_LEN + 1];
-#ifdef BUDDY_ENABLE_CONNECT
     connect_t connect;
-#endif // BUDDY_ENABLE_CONNECT
     lan_t lan;
     uint16_t set_flg;
 } networkconfig_t;
@@ -56,7 +57,7 @@ const char * addr_ip4_str(void);
 const char * msk_ip4_str(void);
 const char * gw_ip4_str(void);
 const char * connect_ip4_str(void);
-uint8_t update_netconfig(uint32_t msk);
+void update_netconfig(uint32_t msk);
 void lan_turn_off(void);
 void lan_turn_on(void);
 

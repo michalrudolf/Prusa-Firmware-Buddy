@@ -65,7 +65,7 @@
 #define LAN_EEFLG_OFF       1
 #define LAN_MSK_TYPE        2 //EEPROM mask for user-defined settings (Switch between dhcp and static)
 #define LAN_EEFLG_DHCP      0
-#define LAN_EEFLG_STATIC    1
+#define LAN_EEFLG_STATIC    2
 
 #ifdef __cplusplus
 extern "C" {
