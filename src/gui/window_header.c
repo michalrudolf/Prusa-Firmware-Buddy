@@ -28,7 +28,7 @@ int16_t WINDOW_CLS_HEADER = 0;
 
 static void update_ETH_icon(bool link_up, window_header_t *window) {
     if (link_up) {
-        if (eeprom_get_var(EEVAR_LAN_FLAG).ui8 & LAN_EEFLG_TYPE) {
+        if ((eeprom_get_var(EEVAR_LAN_FLAG).ui8 & LAN_MSK_TYPE) == LAN_EEFLG_STATIC) {
             if (netif_is_up(&eth0)) {
                 p_window_header_icon_active(window, HEADER_ICON_LAN);
             } else {

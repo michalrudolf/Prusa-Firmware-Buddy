@@ -128,7 +128,7 @@ static int ini_load_handler(void *user, const char *section, const char *name, c
     if (MATCH("lan_ip4", "type")) {
         if (strncmp(value, "DHCP", 4) == 0 || strncmp(value, "dhcp", 4) == 0) {
             CHANGE_LAN_TO_DHCP(tmp_config->lan.flg);
-            tmp_config.set_flg |= NETVAR_MSK(NETVAR_LAN_FLAGS);
+            tmp_config->set_flg |= NETVAR_MSK(NETVAR_LAN_FLAGS);
         } else if (strncmp(value, "STATIC", 6) == 0 || strncmp(value, "static", 6) == 0) {
             CHANGE_LAN_TO_STATIC(tmp_config->lan.flg);
             tmp_config->set_flg |= NETVAR_MSK(NETVAR_LAN_FLAGS);

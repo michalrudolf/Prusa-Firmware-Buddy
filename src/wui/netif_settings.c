@@ -132,7 +132,7 @@ static void update_addrs(uint8_t lan_flg){
 
 uint8_t update_netconfig(uint32_t msk){
 
-    if(msk & NETVAR_MSK(NETVAR_LAN_FLAG)){
+    if(msk & NETVAR_MSK(NETVAR_LAN_FLAGS)){
         netconfig.lan.flg = eeprom_get_var(EEVAR_LAN_FLAG).ui8;
     }
     if((msk & NETVAR_STATIC_LAN_ADDRS) == NETVAR_STATIC_LAN_ADDRS){

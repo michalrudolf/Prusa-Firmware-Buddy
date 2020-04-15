@@ -76,7 +76,7 @@ void netif_link_callback(struct netif *eth) {
     ethernetif_update_config(eth);
     uint8_t ee_flag = eeprom_get_var(EEVAR_LAN_FLAG).ui8;
     if (netif_is_link_up(eth)) {
-        if (!(ee_flag & LAN_EEFLG_ONOFF)) {
+        if ((ee_flag & LAN_MSK_ONOFF) == LAN_EEFLG_ON) {
             netif_set_up(eth);
         }
     } else {
@@ -87,13 +87,13 @@ void netif_link_callback(struct netif *eth) {
 void netif_status_callback(struct netif *eth) {
     uint8_t ee_flag = eeprom_get_var(EEVAR_LAN_FLAG).ui8;
     if (netif_is_up(eth)) {
-        if (!(ee_flag & LAN_EEFLG_TYPE)) {
+        if ((ee_flag & LAN_MSK_TYPE) == LAN_EEFLG_DHCP) {
             dhcp_start(eth);
         } else {
             dhcp_inform(eth);
         }
     } else {
-        if (!(ee_flag & LAN_EEFLG_TYPE)) {
+        if ((ee_flag & LAN_MSK_TYPE) == LAN_EEFLG_DHCP) {
             dhcp_stop(eth);
         }
     }
@@ -117,11 +117,11 @@ void MX_LWIP_Init(void) {
 
     uint8_t ee_lan_flg = eeprom_get_var(EEVAR_LAN_FLAG).ui8;
     variant8_t hostname = eeprom_get_var(EEVAR_LAN_HOSTNAME);
-    strcpy(interface_hostname, hostname.pch);
+    strcpy(netconfig.hostname, hostname.pch);
     variant8_done(&hostname);
-    eth0.hostname = interface_hostname;
+    eth0.hostname = netconfig.hostname;
     /* This won't execute until user loads static lan settings at least once (default is DHCP) */
-    if (ee_lan_flg & LAN_EEFLG_TYPE) {
+    if ((ee_lan_flg & LAN_MSK_TYPE) == LAN_EEFLG_STATIC) {
 
         ipaddr.addr = eeprom_get_var(EEVAR_LAN_IP4_ADDR).ui32;
         netmask.addr = eeprom_get_var(EEVAR_LAN_IP4_MSK).ui32;
@@ -129,10 +129,10 @@ void MX_LWIP_Init(void) {
 
         netif_set_addr(&eth0, &ipaddr, &netmask, &gw);
     }
-    if (!(ee_lan_flg & LAN_EEFLG_ONOFF) && netif_is_link_up(&eth0)) {
+    if ((ee_lan_flg & LAN_MSK_ONOFF) == LAN_EEFLG_ON && netif_is_link_up(&eth0)) {
         /* When the netif is fully configured and switched on this function must be called */
         netif_set_up(&eth0);
-        if (!(ee_lan_flg & LAN_EEFLG_TYPE)) {
+        if ((ee_lan_flg & LAN_MSK_TYPE) == LAN_EEFLG_DHCP) {
             /* Start DHCP negotiation for a network interface (IPv4) */
             dhcp_start(&eth0);
         }
