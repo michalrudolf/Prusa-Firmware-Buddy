@@ -24,7 +24,6 @@ typedef enum {
 
 static char *plan_str = NULL;
 static bool conn_flg = false; // wait for dhcp to supply addresses
-static networkconfig_t config;
 static const char *LAN_switch_opt[] = { "On", "Off", NULL };
 static const char *LAN_type_opt[] = { "static", "DHCP", NULL };
 extern bool media_is_inserted();
@@ -100,8 +99,8 @@ static void screen_lan_settings_init(screen_t *screen) {
 
     update_netconfig(NETVAR_MSK(NETVAR_LAN_FLAGS));
 
-    plsd->items[MI_SWITCH].item.wi_switch_select.index = config.lan.flg & LAN_MSK_ONOFF ? LAN_EEFLG_OFF : LAN_EEFLG_ON;
-    plsd->items[MI_TYPE].item.wi_switch_select.index = config.lan.flg & LAN_MSK_TYPE ? 0 : 1;
+    plsd->items[MI_SWITCH].item.wi_switch_select.index = netconfig.lan.flg & LAN_MSK_ONOFF ? LAN_EEFLG_OFF : LAN_EEFLG_ON;
+    plsd->items[MI_TYPE].item.wi_switch_select.index = netconfig.lan.flg & LAN_MSK_TYPE ? 0 : 1;
     if ((netconfig.lan.flg & LAN_MSK_ONOFF) == LAN_EEFLG_ON && 
         (netconfig.lan.flg & LAN_MSK_TYPE) == LAN_EEFLG_DHCP &&
         !dhcp_supplied_address(&eth0)) {
@@ -170,7 +169,7 @@ static int ini_load_handler(void *user, const char *section, const char *name, c
 static uint8_t load_config(void) {
 
     networkconfig_t tmp_config;
-    tmp_config.lan.flg = config.lan.flg;
+    tmp_config.lan.flg = netconfig.lan.flg;
     tmp_config.set_flg = 0;
 
     if (ini_load_file(ini_load_handler, &tmp_config) == 0) {
@@ -185,7 +184,7 @@ static int screen_lan_settings_event(screen_t *screen, window_t *window,
     window_header_events(&(plsd->header));
 
     if (conn_flg) {
-        if ((config.lan.flg & LAN_MSK_TYPE) == LAN_EEFLG_DHCP && dhcp_supplied_address(&eth0)) {
+        if ((netconfig.lan.flg & LAN_MSK_TYPE) == LAN_EEFLG_DHCP && dhcp_supplied_address(&eth0)) {
             conn_flg = false;
             refresh_addrs(screen);
         }
@@ -259,10 +258,10 @@ static int screen_lan_settings_event(screen_t *screen, window_t *window,
         } else {
             if (load_config()) {
                 if (gui_msgbox("Settings successfully loaded", MSGBOX_BTN_OK | MSGBOX_ICO_INFO) == MSGBOX_RES_OK) {
-                    plsd->items[MI_TYPE].item.wi_switch_select.index = config.lan.flg & LAN_MSK_TYPE ? 0 : 1;
+                    plsd->items[MI_TYPE].item.wi_switch_select.index = netconfig.lan.flg & LAN_MSK_TYPE ? 0 : 1;
                     window_invalidate(plsd->menu.win.id);
                     refresh_addrs(screen);
-                    if ((config.lan.flg & LAN_MSK_TYPE) == LAN_EEFLG_DHCP) {
+                    if ((netconfig.lan.flg & LAN_MSK_TYPE) == LAN_EEFLG_DHCP) {
                         conn_flg = true;
                     }
                 }
