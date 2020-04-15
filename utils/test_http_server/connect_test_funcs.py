@@ -206,13 +206,27 @@ def test_json_body(res_body):
     global json_test
     test_body = json_test['result']['body']
     if 'event' in test_body:
-        if not isinstance(res_body['event'], str) or test_body['event'] not in res_body['event']:
+        if not 'event' in res_body or not isinstance(res_body['event'], str) or test_body['event'] not in res_body['event']:
             return 1
     if 'command_id' in test_body:
-        if not isinstance(res_body['command_id'], int) or test_body['commmand_id'] not in res_body['command_id']:
+        if not 'command_id' in res_body or not isinstance(res_body['command_id'], int) or test_body['commmand_id'] not in res_body['command_id']:
             return 1
-    
-    # ADD ANOTHER TEST
+    if 'reason' in test_body:
+        if not 'reason' in res_body or not isinstance(res_body['reason'], str) or test_body['reason'] not in res_body['reason']:
+            return 1
+
+
+    # ADD ANOTHER TEST DATA
+
+
+
+
+
+
+
+
+
+    # ADD ANOTHER TEST DATA
     
     return 0
 
