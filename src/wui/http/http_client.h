@@ -41,6 +41,7 @@ typedef enum {
     CMD_ACCEPTED,
     CMD_REJT_GEN,
     CMD_REJT_SIZE,        // The response data size is larger than supported
+    CMD_REJT_CONT_LEN,    // The response Content-Length doesn't match its real value
     CMD_REJT_CMD_STRUCT,  // error in the command structure
     CMD_REJT_CMD_ID,      // error with Command-Id
     CMD_REJT_CDNT_TYPE,   // error with Content-Type

@@ -299,7 +299,7 @@
                 {
                     "c-type": "text/x.gcode",
                     "c-length": 2,
-                    "c-id": 0
+                    "c-id": 265
                 }
             ,
                 "body": 
@@ -324,7 +324,7 @@
                 {
                     "event": "REJECTED",
                     "reason": "error in the command structure",
-                    "command_id": 0
+                    "command_id": 265
                 }
             }
         }
@@ -344,7 +344,7 @@
                 {
                     "c-type": "text/x.gcode",
                     "c-length": 76,
-                    "c-id": 0
+                    "c-id": 7852
                 }
             ,
                 "body": 
@@ -370,13 +370,56 @@
                 {
                     "event": "REJECTED",
                     "reason": "number of gcodes exceeds limit",
-                    "command_id": 0
+                    "command_id": 7852
                 }
             }
         }
+        ,
+        
 
 
 
+
+
+
+        {
+            "switch": "on",
+            "name": "Content-Length > real content length",
+            "request":
+            {
+                "header":
+                {
+                    "c-type": "text/x.gcode",
+                    "c-length": 12,
+                    "c-id": 111
+                }
+            ,
+                "body": 
+                {
+                    "type": "low",
+                    "command": "G1 X90"
+                }
+            }
+            ,
+            "result": 
+            {
+                "header": 
+                [
+                    "POST",
+                    "/p/events",
+                    "HTTP/1.0",
+                    "01234567899876543210",
+                    "application/json"
+                ]
+                ,
+                "body":
+                {
+                    "event": "REJECTED",
+                    "reason": "Content-Length doesn't match its real value",
+                    "command_id": 111
+                }
+            }
+        }
 
 
 
