@@ -14,7 +14,8 @@ test_cnt = 0            # test count
 test_curr = 0           # current test
 json_obj = {}           # json object variable (currently loaded json test object)
 json_test = {}          # current json test
-off_test_cnt = 0        # number of swichted off tests
+enabled_tests = []      # number of swichted off tests
+first_loop = True       # used for test load
 
 def generate_response():
     global time_start, next_delay
@@ -125,39 +126,35 @@ def create_request(test):
 
 # loads test from json file
 def test_load():
-    global json_obj, json_test, next_delay, test_curr, off_test_cnt, test_cnt
+    global json_obj, json_test, next_delay, test_curr, enabled_tests, test_cnt, first_loop
 
-    next_delay = 0.00
+    next_delay = 0.00    
 
-    if off_test_cnt == test_cnt:
+    if first_loop:
+        first_loop = False
+        for idx in range(0, test_cnt):
+            if not 'switch' in json_obj[idx] or not 'off' in json_obj[idx]['switch']:
+                enabled_tests.append(idx)
+        if len(enabled_tests) == 0:
+            print("All tests switched off")
+        else:
+            print("Enabled test indexes" + str(enabled_tests))
+    
+    if len(enabled_tests) == 0:
         return ""
 
-    loaded = 0
-    while not loaded:
-        if 'switch' in json_obj[test_curr]:
-            if 'off' in json_obj[test_curr]['switch']:
-                off_test_cnt += 1
-            else:
-                json_test = json_obj[test_curr]
-                loaded = 1
-        else:
-            json_test = json_obj[test_curr]
-            loaded = 1
-
-        if off_test_cnt == test_cnt:
-            print("All tests switched off")
-            return ""
-        
-        if (test_curr + 1) >= test_cnt :
-            test_curr = 0
-            off_test_cnt = 0
-        else:
-            test_curr += 1
+    json_test = json_obj[enabled_tests[test_curr]]
+    
+    if (test_curr + 1) >= len(enabled_tests):
+        test_curr = 0
+    else:
+        test_curr += 1
  
     if 'delay' in json_test:
         next_delay = json_test['delay']
 
     ret_str = create_request(json_test)
+    print("Current test: " + str(enabled_tests[test_curr]))
 
     return ret_str
 
@@ -167,7 +164,7 @@ def test_telemetry(data):
     telemetry_keywords = ["POST", "/p/telemetry", "HTTP/1.0", "01234567899876543210", "application/json"]
     for item in telemetry_keywords:
         if item not in data:
-            test_failed(data, "Telemetry")
+            test_failed(data, "Telemetry header")
             return
 
     response_dic = find_json_structure(data)
@@ -193,6 +190,7 @@ def test_telemetry(data):
     if not isinstance(response_dic['flow_factor'], int):
         test_failed(data, "Telemetry")
         return
+    print("Telemetry is OK")
 
 # if test fails it logs the info in error output file "connect_tests_results.txt"
 def test_failed(data, name):
@@ -215,7 +213,6 @@ def test_json_body(res_body):
         if not 'reason' in res_body or not isinstance(res_body['reason'], str) or test_body['reason'] not in res_body['reason']:
             return 1
 
-
     # ADD ANOTHER TEST DATA
 
 
@@ -227,7 +224,7 @@ def test_json_body(res_body):
 
 
     # ADD ANOTHER TEST DATA
-    
+    print("Test is OK")
     return 0
 
 # test the response from printer

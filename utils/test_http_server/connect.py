@@ -36,7 +36,7 @@ def main():
     args = parser.parse_args()
 
     HOST = args.ip_address
-    PORT = 80
+    PORT = 8000
 
     test.tests_init()
 
