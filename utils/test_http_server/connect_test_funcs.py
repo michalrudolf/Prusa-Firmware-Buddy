@@ -173,23 +173,17 @@ def test_telemetry(data):
         return
 
     if not isinstance(response_dic['temp_nozzle'], int):
-        test_failed(data, "Telemetry")
-        return
+        test_failed(data, "temp_nozzle in Telemetry")
     if not isinstance(response_dic['temp_bed'], int):
-        test_failed(data, "Telemetry")
-        return
+        test_failed(data, "temp_bed in Telemetry")
     if not isinstance(response_dic['material'], str):
-        test_failed(data, "Telemetry")
-        return
+        test_failed(data, "material in Telemetry")
     if not isinstance(response_dic['pos_z_mm'], float):
-        test_failed(data, "Telemetry")
-        return
+        test_failed(data, "pos_z_mm in Telemetry")
     if not isinstance(response_dic['printing_speed'], int):
-        test_failed(data, "Telemetry")
-        return
+        test_failed(data, "printing_speed in Telemetry")
     if not isinstance(response_dic['flow_factor'], int):
-        test_failed(data, "Telemetry")
-        return
+        test_failed(data, "flow_factpr in Telemetry")
     print("Telemetry is OK")
 
 # if test fails it logs the info in error output file "connect_tests_results.txt"
