@@ -51,10 +51,10 @@ osPoolId httpc_req_mpool_id;
 static const httpc_cmd_status_str_t cmd_status_str[] = {
     { "General", CMD_REJT_GEN },
     { "Packet size overflow", CMD_REJT_SIZE },                  // The response data size is larger than supported
-    { "Content-Length doesn't match its real value", CMD_REJT_CONT_LEN}, // The respons Conetent-Length doesn't match its real value
+    { "Content-Length doesnt match its real value", CMD_REJT_CONT_LEN}, // The respons Conetent-Length doesn't match its real value
     { "error in the command structure", CMD_REJT_CMD_STRUCT },  // error in the command structure
     { "error with Command-Id", CMD_REJT_CMD_ID },               // error with Command-Id
-    { "error with Content-Type", CMD_REJT_CDNT_TYPE },          // error with Content-Type
+    { "error with Content-Type", CMD_REJT_CONT_TYPE },          // error with Content-Type
     { "number of gcodes exceeds limit", CMD_REJT_GCODES_LIMI }, // number of gcodes in x-gcode request exceeded
 };
 
@@ -315,8 +315,6 @@ http_wait_headers(struct pbuf *p, u32_t *content_length, u16_t *total_header_len
                         header_info.content_type = TYPE_JSON;
                     } else if (0 == strncmp(content_type_str, type_xgcode_str, strlen(type_xgcode_str))) {
                         header_info.content_type = TYPE_GCODE;
-                    } else {
-                        return ERR_VAL;
                     }
                 }
             }
@@ -523,13 +521,18 @@ err_t data_received_fun(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t e
         return ERR_ARG;
     }
 
-    if (HTTPC_RESPONSE_BUFF_SZ < p->tot_len || HTTPC_RESPONSE_BUFF_SZ < header_info.content_lenght) {
+    if (header_info.content_type == TYPE_INVALID){
+        cmd_status = CMD_REJT_CONT_TYPE;
+        pbuf_free(p);
+    }
+
+    if (cmd_status == CMD_UNKNOWN && (HTTPC_RESPONSE_BUFF_SZ < p->tot_len || HTTPC_RESPONSE_BUFF_SZ < header_info.content_lenght)) {
         cmd_status = CMD_REJT_SIZE;
         result = HTTPC_RESULT_OK;
         pbuf_free(p);
     }
-    
-    if (p->tot_len < header_info.content_lenght || p->tot_len > header_info.content_lenght){
+
+    if (cmd_status == CMD_UNKNOWN && (p->tot_len < header_info.content_lenght || p->tot_len > header_info.content_lenght)){
         cmd_status = CMD_REJT_CONT_LEN;
         result = HTTPC_RESULT_ERR_CONTENT_LEN;
         pbuf_free(p);
@@ -563,10 +566,10 @@ err_t data_received_fun(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t e
             httpc_resp_buffer[header_info.content_lenght] = 0; // end of line added
             cmd_status = parse_http_reply(httpc_resp_buffer, len_copied, &header_info);
             result = HTTPC_RESULT_OK;
-    u16_t status = req->rx_status;
+        }
     }
-    
-    httpc_close(req, result, req->rx_status, ERR_OK);
+    u16_t status = req->rx_status;
+    httpc_close(req, result, status, ERR_OK);
     if (status == 200) {
         // send acknowledgment  TODO: only if it is answer to /p/telemetry
         if (CMD_UNKNOWN != cmd_status) {

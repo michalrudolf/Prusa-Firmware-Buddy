@@ -25,7 +25,6 @@ class TestTCPHandler(socketserver.BaseRequestHandler):
         else:
             # start testing
             test.test_printers_response(data_str)
-            print("Recieved: " + data_str)
 
 def main():
     
