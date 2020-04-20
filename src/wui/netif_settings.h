@@ -46,6 +46,8 @@ typedef struct {
     char hostname[LAN_HOSTNAME_MAX_LEN + 1];
     connect_t connect;
     lan_t lan;
+    ip4_addr_t dns1_ip4;
+    ip4_addr_t dns2_ip4;
     uint16_t set_flg;
 } networkconfig_t;
 

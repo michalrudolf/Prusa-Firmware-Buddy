@@ -4,7 +4,9 @@
 #include "ini.h"
 #include "ff.h"
 #include "netif_settings.h"
+#include <stdlib.h>
 
+#define MAX_UINT16  65535
 static const char network_ini_file_name[] = "/lan_settings.ini"; //change -> change msgboxes in screen_lan_settings
 
 static int load_netconfig_handler(void *user, const char *section, const char *name, const char *value) {
@@ -34,16 +36,22 @@ static int load_netconfig_handler(void *user, const char *section, const char *n
         if (ip4addr_aton(value, &tmp_config->lan.gw_ip4)) {
             tmp_config->set_flg |= NETVAR_MSK(NETVAR_LAN_IP4_GW);
         }
+    } else if (MATCH("connect", "port")) {
+        int32_t tmp_port = atoi(value);
+        if ( tmp_port > 0 && tmp_port < MAX_UINT16){
+            tmp_config->connect.port = tmp_port;
+            tmp_config->set_flg |= NETVAR_MSK(NETVAR_CONNECT_PORT);
+        }
     }
 #ifdef BUDDY_ENABLE_DNS
     else if (MATCH("lan_ip4", "dns1")) {
-        if (ip4addr_aton(value, &tmp_config->connect.ip4)) {
+        if (ip4addr_aton(value, &tmp_config->dns1_ip4)) {
             tmp_config->set_flg |= NETVAR_MSK(NETVAR_DNS1_IP4);
         }
     } else if (MATCH("lan_ip4", "dns2")) {
-        strlcpy(tmp_config->connect.token, value, CONNECT_TOKEN_SIZE + 1);
-        tmp_config->connect.token[CONNECT_TOKEN_SIZE] = '\0';
-        tmp_config->set_flg |= NETVAR_MSK(NETVAR_DNS2_IP4);
+        if (ip4addr_aton(value, &tmp_config->dns2_ip4)) {
+            tmp_config->set_flg |= NETVAR_MSK(NETVAR_DNS2_IP4);
+        }
     }
 #endif //BUDDY_ENABLE_DNS
 #ifdef BUDDY_ENABLE_CONNECT
