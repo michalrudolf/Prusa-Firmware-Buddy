@@ -213,7 +213,7 @@ HTTPC_COMMAND_STATUS parse_http_reply(char *reply, uint32_t reply_len, httpc_hea
     } else if (TYPE_GCODE == h_info_ptr->content_type) {
         cmd_status = parse_low_level_cmd(reply, h_info_ptr);
     } else {
-        cmd_status = CMD_REJT_CDNT_TYPE;
+        cmd_status = CMD_REJT_CONT_TYPE;
     }
     return cmd_status;
 }
