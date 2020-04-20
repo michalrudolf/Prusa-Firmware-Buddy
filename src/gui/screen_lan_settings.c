@@ -125,6 +125,9 @@ static uint8_t load_config(void) {
 
     networkconfig_t tmp_config;
     tmp_config.lan.flg = netconfig.lan.flg;
+#if BUDDY_ENABLE_DNS
+    tmp_config.dns1_ip4.addr = tmp_config.dns2_ip4.addr = 0;
+#endif //BUDDY_ENABLE_DNS
     tmp_config.set_flg = 0;
 
     if (ini_load_file(&tmp_config)) {

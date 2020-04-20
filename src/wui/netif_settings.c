@@ -41,7 +41,7 @@ void lan_set_static(void) {
         (const ip4_addr_t *)&(netconfig.lan.msk_ip4),
         (const ip4_addr_t *)&(netconfig.lan.gw_ip4)
         );
-#ifdef BUDDY_ENABLE_DNS
+#if BUDDY_ENABLE_DNS
     dns_setserver(0, &netconfig.dns1_ip4);
     dns_setserver(1, &netconfig.dns2_ip4);
 #endif //BUDDY_ENABLE_DNS
@@ -75,7 +75,7 @@ uint8_t set_loaded_netconfig(networkconfig_t * tmp_config){
         // if lan type is set to STATIC
         if ((tmp_config->lan.flg & LAN_MSK_TYPE) == LAN_EEFLG_STATIC){
             if ((tmp_config->set_flg & NETVAR_STATIC_LAN_ADDRS) != NETVAR_STATIC_LAN_ADDRS
-#ifdef BUDDY_ENABLE_DNS
+#if BUDDY_ENABLE_DNS
                 && tmp_config->set_flg & (NETVAR_MSK(NETVAR_DNS1_IP4) | NETVAR_MSK(NETVAR_DNS2_IP4))
                 && (tmp_config->dns1_ip4.addr != 0 || tmp_config->dns2_ip4.addr != 0)
 #endif //BUDDY_ENABLE_DNS
@@ -85,11 +85,15 @@ uint8_t set_loaded_netconfig(networkconfig_t * tmp_config){
             eeprom_set_var(EEVAR_LAN_IP4_ADDR, variant8_ui32(tmp_config->lan.addr_ip4.addr));
             eeprom_set_var(EEVAR_LAN_IP4_MSK, variant8_ui32(tmp_config->lan.msk_ip4.addr));
             eeprom_set_var(EEVAR_LAN_IP4_GW, variant8_ui32(tmp_config->lan.gw_ip4.addr));
+#if BUDDY_ENABLE_DNS
             eeprom_set_var(EEVAR_DNS1_IP4, variant8_ui32(tmp_config->dns1_ip4.addr));
             eeprom_set_var(EEVAR_DNS2_IP4, variant8_ui32(tmp_config->dns2_ip4.addr));
             netconfig.lan.addr_ip4.addr = tmp_config->lan.addr_ip4.addr;
             netconfig.lan.msk_ip4.addr = tmp_config->lan.msk_ip4.addr;
+#endif //BUDDY_ENABLE_DNS
             netconfig.lan.gw_ip4.addr = tmp_config->lan.gw_ip4.addr;
+            netconfig.dns1_ip4.addr = tmp_config->dns1_ip4.addr;
+            netconfig.dns2_ip4.addr = tmp_config->dns2_ip4.addr;
         }
     }
     if (tmp_config->set_flg & NETVAR_MSK(NETVAR_HOSTNAME)) {
@@ -109,6 +113,10 @@ uint8_t set_loaded_netconfig(networkconfig_t * tmp_config){
     if (tmp_config->set_flg & NETVAR_MSK(NETVAR_CONNECT_IP4)) {
         netconfig.connect.ip4.addr = tmp_config->connect.ip4.addr;
         eeprom_set_var(EEVAR_CONNECT_IP4, variant8_ui32(tmp_config->connect.ip4.addr));
+    }
+    if (tmp_config->set_flg & NETVAR_MSK(NETVAR_CONNECT_PORT)) {
+        netconfig.connect.port = tmp_config->connect.port;
+        eeprom_set_var(EEVAR_CONNECT_PORT, variant8_ui16(tmp_config->connect.port));
     }
 #endif // BUDDY_ENABLE_CONNECT
 
@@ -164,6 +172,14 @@ void update_netconfig(uint32_t msk){
         strlcpy(netconfig.hostname, hostname.pch, LAN_HOSTNAME_MAX_LEN + 1);
         variant8_done(&hostname);
     }
+#if BUDDY_ENABLE_DNS
+    if(msk & NETVAR_MSK(dns1_ip4)) {
+        netconfig.dns1_ip4.addr = eeprom_get_var(EEVAR_DNS1_IP4).ui32;
+    }
+    if(msk & NETVAR_MSK(dns2_ip4)) {
+        netconfig.dns2_ip4.addr = eeprom_get_var(EEVAR_DNS2_IP4).ui32;
+    }
+#endif //BUDDY_ENABLE_DNS
 #ifdef BUDDY_ENABLE_CONNECT
     if(msk & NETVAR_MSK(NETVAR_CONNECT_IP4)){
         netconfig.connect.ip4.addr = eeprom_get_var(EEVAR_CONNECT_IP4).ui32;
@@ -173,6 +189,9 @@ void update_netconfig(uint32_t msk){
         variant8_t connect_token = eeprom_get_var(EEVAR_CONNECT_TOKEN);
         strlcpy(netconfig.connect.token, connect_token.pch, CONNECT_TOKEN_SIZE + 1);
         variant8_done(&connect_token);
+    }
+    if(msk & NETVAR_MSK(NETVAR_CONNECT_PORT)) {
+        netconfig.connect.port = eeprom_get_var(EEVAR_CONNECT_PORT).ui16;
     }
 #endif // BUDDY_ENABLE_CONNECT
     if(msk & NETVAR_MSK(NETVAR_MAC_ADDR)){

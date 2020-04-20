@@ -124,6 +124,11 @@ void MX_LWIP_Init(void) {
         netmask.addr = netconfig.lan.msk_ip4.addr;
         gw.addr = netconfig.lan.gw_ip4.addr;
 
+#if BUDDY_ENABLE_DNS
+        dns_setserver(0, &netconfig.dns1_ip4);
+        dns_setserver(1, &netconfig.dns2_ip4);
+#endif //BUDDY_ENABLE_DNS
+
         netif_set_addr(&eth0, &ipaddr, &netmask, &gw);
     }
     if ((netconfig.lan.flg & LAN_MSK_ONOFF) == LAN_EEFLG_ON && netif_is_link_up(&eth0)) {

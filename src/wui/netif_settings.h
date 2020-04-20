@@ -16,6 +16,8 @@
 #define TURN_LAN_ON(flg)            (flg &= ~LAN_MSK_ONOFF)   // flip lan switch flg to ON
 
 
+#define BUDDY_ENABLE_DNS  LWIP_DNS
+
 typedef enum{
     NETVAR_LAN_FLAGS,
     NETVAR_HOSTNAME,

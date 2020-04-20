@@ -117,6 +117,9 @@ void StartWebServerTask(void const *argument) {
 #ifdef BUDDY_ENABLE_INI_LOAD_AFTER_START
     networkconfig_t config;
     config.lan.flg = netconfig.lan.flg;
+    #if BUDDY_ENABLE_DNS
+        config.dns1_ip4.addr = config.dns2_ip4.addr = 0;
+    #endif //BUDDY_ENABLE_DNS
     config.set_flg = 0;
     if(ini_load_file(&config)){
         if(set_loaded_netconfig(&config)){

@@ -43,7 +43,7 @@ static int load_netconfig_handler(void *user, const char *section, const char *n
             tmp_config->set_flg |= NETVAR_MSK(NETVAR_CONNECT_PORT);
         }
     }
-#ifdef BUDDY_ENABLE_DNS
+#if BUDDY_ENABLE_DNS
     else if (MATCH("lan_ip4", "dns1")) {
         if (ip4addr_aton(value, &tmp_config->dns1_ip4)) {
             tmp_config->set_flg |= NETVAR_MSK(NETVAR_DNS1_IP4);
