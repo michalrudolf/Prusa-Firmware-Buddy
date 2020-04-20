@@ -75,15 +75,18 @@ uint8_t set_loaded_netconfig(networkconfig_t * tmp_config){
         // if lan type is set to STATIC
         if ((tmp_config->lan.flg & LAN_MSK_TYPE) == LAN_EEFLG_STATIC){
             if ((tmp_config->set_flg & NETVAR_STATIC_LAN_ADDRS) != NETVAR_STATIC_LAN_ADDRS
-            //
-            //  TO BE CONTINUED..
-            //
+#ifdef BUDDY_ENABLE_DNS
+                && tmp_config->set_flg & (NETVAR_MSK(NETVAR_DNS1_IP4) | NETVAR_MSK(NETVAR_DNS2_IP4))
+                && (tmp_config->dns1_ip4.addr != 0 || tmp_config->dns2_ip4.addr != 0)
+#endif //BUDDY_ENABLE_DNS
             ) {
                 return 0;
             }
             eeprom_set_var(EEVAR_LAN_IP4_ADDR, variant8_ui32(tmp_config->lan.addr_ip4.addr));
             eeprom_set_var(EEVAR_LAN_IP4_MSK, variant8_ui32(tmp_config->lan.msk_ip4.addr));
             eeprom_set_var(EEVAR_LAN_IP4_GW, variant8_ui32(tmp_config->lan.gw_ip4.addr));
+            eeprom_set_var(EEVAR_DNS1_IP4, variant8_ui32(tmp_config->dns1_ip4.addr));
+            eeprom_set_var(EEVAR_DNS2_IP4, variant8_ui32(tmp_config->dns2_ip4.addr));
             netconfig.lan.addr_ip4.addr = tmp_config->lan.addr_ip4.addr;
             netconfig.lan.msk_ip4.addr = tmp_config->lan.msk_ip4.addr;
             netconfig.lan.gw_ip4.addr = tmp_config->lan.gw_ip4.addr;

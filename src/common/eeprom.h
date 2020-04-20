@@ -47,8 +47,8 @@
     #define EEVAR_LAN_IP4_ADDR  0x13 // X.X.X.X address encoded in uint32
     #define EEVAR_LAN_IP4_MSK   0x14 // X.X.X.X address encoded in uint32
     #define EEVAR_LAN_IP4_GW    0x15 // X.X.X.X address encoded in uint32
-    #define EEVAR_LAN_IP4_DNS1  0x16 // X.X.X.X address encoded in uint32
-    #define EEVAR_LAN_IP4_DNS2  0x17 // X.X.X.X address encoded in uint32
+    #define EEVAR_DNS1_IP4      0x16 // X.X.X.X address encoded in uint32
+    #define EEVAR_DNS2_IP4      0x17 // X.X.X.X address encoded in uint32
     #define EEVAR_CONNECT_PORT  0x18 // uint32
     #define EEVAR_CONNECT_IP4   0x19 // X.X.X.X address encoded in uint32
     #define EEVAR_CONNECT_TOKEN 0x1A // 20char string
