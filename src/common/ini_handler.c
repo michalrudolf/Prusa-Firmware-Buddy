@@ -35,6 +35,17 @@ static int load_netconfig_handler(void *user, const char *section, const char *n
             tmp_config->set_flg |= NETVAR_MSK(NETVAR_LAN_IP4_GW);
         }
     }
+#ifdef BUDDY_ENABLE_DNS
+    else if (MATCH("lan_ip4", "dns1")) {
+        if (ip4addr_aton(value, &tmp_config->connect.ip4)) {
+            tmp_config->set_flg |= NETVAR_MSK(NETVAR_DNS1_IP4);
+        }
+    } else if (MATCH("lan_ip4", "dns2")) {
+        strlcpy(tmp_config->connect.token, value, CONNECT_TOKEN_SIZE + 1);
+        tmp_config->connect.token[CONNECT_TOKEN_SIZE] = '\0';
+        tmp_config->set_flg |= NETVAR_MSK(NETVAR_DNS2_IP4);
+    }
+#endif //BUDDY_ENABLE_DNS
 #ifdef BUDDY_ENABLE_CONNECT
     else if (MATCH("connect", "address")) {
         if (ip4addr_aton(value, &tmp_config->connect.ip4)) {
