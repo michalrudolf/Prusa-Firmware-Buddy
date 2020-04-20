@@ -19,10 +19,7 @@ response_arrived = True     # printer responded with tested data
 test_cycle_cnt = 0          # number of test cycles
 
 def generate_response():
-    global time_start, next_delay, response_arrived, enabled_tests, test_curr
-    
-    if not response_arrived:
-        test_failed("", "Printer didnt respond on test #" + str(enabled_tests[test_curr]))
+    global time_start, next_delay, response_arrived
     
     time_point = time.perf_counter()
     ret_data = ""
@@ -36,10 +33,11 @@ def generate_response():
         else:
             ret_data = test_str
         time_start = time_point
+        if not response_arrived:
+            test_failed("", "Printer didnt respond on test #" + str(enabled_tests[test_curr]))
+        response_arrived = False
     else:
         ret_data = HTTP_OK + "\r\n"
-    
-    response_arrived = False
     
     return ret_data
 
@@ -212,8 +210,9 @@ def test_telemetry(data):
 
 # if test fails it logs the info in error output file "connect_tests_results.txt"
 def test_failed(data, name):
+    global test_cycle_cnt
     now = datetime.now()
-    logging.error(str(now) + " :: Test " + name + " failed:\n" + data + "\n")
+    logging.error(str(now) + " :: Test " + name + " in test cycle " + str(test_cycle_cnt) + " failed:\n" + data + "\n")
 
 # testing json structure decoded from printer's response
 #   res_body = decoded json structure in dictionary
@@ -242,13 +241,14 @@ def test_json_body(res_body):
 
 
     # ADD ANOTHER TEST DATA
-    response_arrived = True
     return 0
 
 # test the response from printer
 def test_printers_response(data_str):
-    global json_test
+    global json_test, response_arrived
     json_response = 0
+
+    response_arrived = True
 
     test_name = "Unknown"
     if 'name' in json_test:
