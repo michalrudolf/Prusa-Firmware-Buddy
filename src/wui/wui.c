@@ -114,7 +114,7 @@ void StartWebServerTask(void const *argument) {
     // LwIP related initalizations
     MX_LWIP_Init();
     http_server_init();
-#ifdef BUDDY_ENABLE_INI_LOAD_AFTER_START
+#if BUDDY_ENABLE_INI_LOAD_AFTER_START
     networkconfig_t config;
     config.lan.flg = netconfig.lan.flg;
     #if BUDDY_ENABLE_DNS
