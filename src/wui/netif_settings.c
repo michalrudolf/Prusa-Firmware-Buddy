@@ -3,6 +3,7 @@
 #include "lwip/dhcp.h"
 #include "lwip/netifapi.h"
 #include <string.h>
+#include "dns.h"
 
 #define MAX_UINT16  65535
 #define MAC_ADDR_START    0x1FFF781A //MM:MM:MM:SS:SS:SS
@@ -40,6 +41,10 @@ void lan_set_static(void) {
         (const ip4_addr_t *)&(netconfig.lan.msk_ip4),
         (const ip4_addr_t *)&(netconfig.lan.gw_ip4)
         );
+#ifdef BUDDY_ENABLE_DNS
+    dns_setserver(0, &netconfig.dns1_ip4);
+    dns_setserver(1, &netconfig.dns2_ip4);
+#endif //BUDDY_ENABLE_DNS
     if (netif_is_link_up(&eth0) && ((netconfig.lan.flg & LAN_MSK_ONOFF) == LAN_EEFLG_ON)) {
         netifapi_netif_set_up(&eth0);
     }
@@ -69,7 +74,11 @@ uint8_t set_loaded_netconfig(networkconfig_t * tmp_config){
     if (tmp_config->set_flg & NETVAR_MSK(NETVAR_LAN_FLAGS)) {
         // if lan type is set to STATIC
         if ((tmp_config->lan.flg & LAN_MSK_TYPE) == LAN_EEFLG_STATIC){
-            if ((tmp_config->set_flg & NETVAR_STATIC_LAN_ADDRS) != NETVAR_STATIC_LAN_ADDRS) {
+            if ((tmp_config->set_flg & NETVAR_STATIC_LAN_ADDRS) != NETVAR_STATIC_LAN_ADDRS
+            //
+            //  TO BE CONTINUED..
+            //
+            ) {
                 return 0;
             }
             eeprom_set_var(EEVAR_LAN_IP4_ADDR, variant8_ui32(tmp_config->lan.addr_ip4.addr));
