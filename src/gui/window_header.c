@@ -10,36 +10,22 @@
 #include "config.h"
 #include "marlin_client.h"
 #ifdef BUDDY_ENABLE_ETHERNET
-    #include "lwip/netif.h"
-    #include "lwip/dhcp.h"
+    #include "c_wui_api.h"
 #endif //BUDDY_ENABLE_ETHERNET
-#include "eeprom.h"
 
 extern bool media_is_inserted();
-
-extern struct netif eth0;
-#if 0
-extern struct netif wlan0;
-#endif
 
 void window_frame_draw(window_frame_t *window);
 
 int16_t WINDOW_CLS_HEADER = 0;
 
-static void update_ETH_icon(bool link_up, window_header_t *window) {
-    if (link_up) {
-        if ((eeprom_get_var(EEVAR_LAN_FLAG).ui8 & LAN_MSK_TYPE) == LAN_EEFLG_STATIC) {
-            if (netif_is_up(&eth0)) {
-                p_window_header_icon_active(window, HEADER_ICON_LAN);
-            } else {
-                p_window_header_icon_on(window, HEADER_ICON_LAN);
-            }
+static void update_ETH_icon(window_header_t *window) {
+    ETH_STATUS_t eth_status = wui_eth_status();
+    if (eth_status != ETH_UNLINKED) {
+        if(eth_status == ETH_DHCP_SUPP || eth_status == ETH_STATIC_UP){
+            p_window_header_icon_active(window, HEADER_ICON_LAN);
         } else {
-            if (dhcp_supplied_address(&eth0)) {
-                p_window_header_icon_active(window, HEADER_ICON_LAN);
-            } else {
-                p_window_header_icon_on(window, HEADER_ICON_LAN);
-            }
+            p_window_header_icon_on(window, HEADER_ICON_LAN);
         }
     } else {
         p_window_header_icon_off(window, HEADER_ICON_LAN);
@@ -62,7 +48,7 @@ void window_header_init(window_header_t *window) {
         window->icons[HEADER_ICON_USB] = HEADER_ISTATE_ACTIVE;
     }
 #ifdef BUDDY_ENABLE_ETHERNET
-    update_ETH_icon(netif_is_link_up(&eth0), window);
+    update_ETH_icon(window);
 #endif //BUDDY_ENABLE_ETHERNET
 }
 
@@ -165,7 +151,7 @@ void p_window_header_set_text(window_header_t *window, const char *text) {
 int p_window_header_event_clr(window_header_t *window, MARLIN_EVT_t evt_id) {
     /* lwip fces only read states, invalid states by another thread never mind */
 #ifdef BUDDY_ENABLE_ETHERNET
-    update_ETH_icon(netif_is_link_up(&eth0), window);
+    update_ETH_icon(window);
 #endif //BUDDY_ENABLE_ETHERNET
     if (marlin_event_clr(evt_id)) {
         switch (evt_id) {

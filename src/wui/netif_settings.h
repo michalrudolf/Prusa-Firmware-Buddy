@@ -2,6 +2,7 @@
 #define NETIF_SETTINGS_H
 
 #include <stdint.h>
+#include "c_wui_api.h"
 #include "eeprom.h"
 #include "ip_addr.h"
 #define NETVAR_MSK(n_id) ((uint16_t)1 << (n_id))
