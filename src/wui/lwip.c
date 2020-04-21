@@ -63,9 +63,9 @@
 
 #include "dbg.h"
 #include "ethernetif.h"
+#include "wui_eeprom_api.h"
 #include "netif_settings.h"
 
-struct netif eth0;
 ip4_addr_t ipaddr;
 ip4_addr_t netmask;
 ip4_addr_t gw;
@@ -74,9 +74,9 @@ void Error_Handler(void);
 
 void netif_link_callback(struct netif *eth) {
     ethernetif_update_config(eth);
-    uint8_t ee_flag = eeprom_get_var(EEVAR_LAN_FLAG).ui8;
+    uint8_t ee_flag = wui_eeprom_get_var(NETVAR_LAN_FLAGS).ui8;
     if (netif_is_link_up(eth)) {
-        if ((ee_flag & LAN_MSK_ONOFF) == LAN_EEFLG_ON) {
+        if (IS_LAN_ON(ee_flag)) {
             netif_set_up(eth);
         }
     } else {
@@ -85,15 +85,15 @@ void netif_link_callback(struct netif *eth) {
 }
 
 void netif_status_callback(struct netif *eth) {
-    uint8_t ee_flag = eeprom_get_var(EEVAR_LAN_FLAG).ui8;
+    uint8_t ee_flag = wui_eeprom_get_var(NETVAR_LAN_FLAGS).ui8;
     if (netif_is_up(eth)) {
-        if ((ee_flag & LAN_MSK_TYPE) == LAN_EEFLG_DHCP) {
+        if (IS_LAN_DHCP(ee_flag)) {
             dhcp_start(eth);
         } else {
             dhcp_inform(eth);
         }
     } else {
-        if ((ee_flag & LAN_MSK_TYPE) == LAN_EEFLG_DHCP) {
+        if (IS_LAN_DHCP(ee_flag)) {
             dhcp_stop(eth);
         }
     }
@@ -118,7 +118,7 @@ void MX_LWIP_Init(void) {
     update_netconfig(NETVAR_EEPROM_CONFIG);
     eth0.hostname = netconfig.hostname;
     /* This won't execute until user loads static lan settings at least once (default is DHCP) */
-    if ((netconfig.lan.flg & LAN_MSK_TYPE) == LAN_EEFLG_STATIC) {
+    if (IS_LAN_STATIC(netconfig.lan.flg)) {
 
         ipaddr.addr = netconfig.lan.addr_ip4.addr;
         netmask.addr = netconfig.lan.msk_ip4.addr;
@@ -131,10 +131,10 @@ void MX_LWIP_Init(void) {
 
         netif_set_addr(&eth0, &ipaddr, &netmask, &gw);
     }
-    if ((netconfig.lan.flg & LAN_MSK_ONOFF) == LAN_EEFLG_ON && netif_is_link_up(&eth0)) {
+    if (IS_LAN_ON(netconfig.lan.flg) && netif_is_link_up(&eth0)) {
         /* When the netif is fully configured and switched on this function must be called */
         netif_set_up(&eth0);
-        if ((netconfig.lan.flg & LAN_MSK_TYPE) == LAN_EEFLG_DHCP) {
+        if (IS_LAN_DHCP(netconfig.lan.flg)) {
             /* Start DHCP negotiation for a network interface (IPv4) */
             dhcp_start(&eth0);
         }
@@ -145,6 +145,8 @@ void MX_LWIP_Init(void) {
     /* Setting necessary callbacks after initial setup */
     netif_set_link_callback(&eth0, netif_link_callback);
     netif_set_status_callback(&eth0, netif_status_callback);
+
+    parse_MAC_addr();
 }
 
 /* MINI LwIP interface functions --------------------------------------------*/

@@ -1,16 +1,15 @@
+/*
+ * netif_settings.c
+ * \brief   Functions for setting net interface
+ *
+ *  Created on: April 21, 2020
+ *      Author: Migi <michal.rudolf[at]prusa3d.cz>
+ */
 #ifndef NETIF_SETTINGS_H
 #define NETIF_SETTINGS_H
 
-#include <stdint.h>
-#include "c_wui_api.h"
-#include "eeprom.h"
 #include "ip_addr.h"
-#define NETVAR_MSK(n_id) ((uint16_t)1 << (n_id))
-#define NETVAR_STATIC_LAN_ADDRS \
-    (NETVAR_MSK(NETVAR_LAN_IP4_ADDR) | NETVAR_MSK(NETVAR_LAN_IP4_MSK) | NETVAR_MSK(NETVAR_LAN_IP4_GW))
-
-#define NETVAR_EEPROM_CONFIG \
-    (NETVAR_STATIC_LAN_ADDRS | NETVAR_MSK(NETVAR_LAN_FLAGS) | NETVAR_MSK(NETVAR_HOSTNAME) | NETVAR_MSK(NETVAR_DNS1_IP4) | NETVAR_MSK(NETVAR_DNS2_IP4) | NETVAR_MSK(NETVAR_CONNECT_PORT) | NETVAR_MSK(NETVAR_CONNECT_IP4) | NETVAR_MSK(NETVAR_CONNECT_TOKEN))
+#include "netvars.h"
 
 #define CHANGE_LAN_TO_STATIC(flg)   (flg |= LAN_MSK_TYPE)   // flip lan type flg to STATIC
 #define CHANGE_LAN_TO_DHCP(flg)     (flg &= ~LAN_MSK_TYPE)   // flip lan type flg to DHCP
@@ -20,21 +19,8 @@
 
 #define BUDDY_ENABLE_DNS  LWIP_DNS
 
-typedef enum{
-    NETVAR_LAN_FLAGS,
-    NETVAR_HOSTNAME,
-    NETVAR_LAN_IP4_ADDR,
-    NETVAR_LAN_IP4_MSK,
-    NETVAR_LAN_IP4_GW,
-    NETVAR_DNS1_IP4,
-    NETVAR_DNS2_IP4,
-    NETVAR_CONNECT_PORT,
-    NETVAR_CONNECT_IP4,
-    NETVAR_CONNECT_TOKEN,
-    NETVAR_MAC_ADDR,
-} NETVAR_t;
 typedef struct {
-    char token[CONNECT_TOKEN_SIZE + 1];
+    char token[CONNECT_TOKEN_LEN + 1];
     uint32_t port;
     ip4_addr_t ip4;
 } connect_t; 
@@ -47,7 +33,7 @@ typedef struct {
 } lan_t;
 
 typedef struct {
-    char hostname[LAN_HOSTNAME_MAX_LEN + 1];
+    char hostname[LAN_HOSTNAME_LEN + 1];
     connect_t connect;
     lan_t lan;
     ip4_addr_t dns1_ip4;
@@ -55,20 +41,24 @@ typedef struct {
     uint16_t set_flg;
 } networkconfig_t;
 
+extern struct netif eth0;
 extern networkconfig_t netconfig;
+extern networkconfig_t tmp_netconfig;
 
 void lan_set_dhcp(void);
 void lan_set_static(void);
-uint8_t set_loaded_netconfig(networkconfig_t * tmp_config);
-const char * mac_addr_str(void);
-const char * addr_ip4_str(void);
-const char * msk_ip4_str(void);
-const char * gw_ip4_str(void);
-const char * connect_ip4_str(void);
+uint8_t set_loaded_netconfig(void);
+const char * get_mac_addr_str(void);
+const char * get_addr_ip4_str(void);
+const char * get_msk_ip4_str(void);
+const char * get_gw_ip4_str(void);
+const char * get_connect_ip4_str(void);
 void update_netconfig(uint32_t msk);
 void lan_turn_off(void);
 void lan_turn_on(void);
+void parse_MAC_addr();
 int load_netconfig_ini_handler(void *user, const char *section, const char *name, const char *value);
+ETH_STATUS_t eth_status(void);
 
 
 #endif //NETIF_SETTINGS_H

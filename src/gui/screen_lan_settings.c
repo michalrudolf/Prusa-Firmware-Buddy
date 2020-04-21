@@ -7,12 +7,10 @@
 
 #include "screen_lan_settings.h"
 #include "ini_handler.h"
-#include "lwip/dhcp.h"
-#include "lwip/netifapi.h"
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include "netif_settings.h"
+#include "c_wui_api.h"
 
 typedef enum {
     MI_RETURN,
@@ -42,22 +40,22 @@ static void _screen_lan_settings_item(window_menu_t *pwindow_menu, uint16_t inde
 
 static void stringify_net_info_for_screen(char * dest) {
     snprintf(dest, 150, "IPv4 Address:\n  %s      \nIPv4 Netmask:\n  %s      \nIPv4 Gateway:\n  %s      \nMAC Address:\n  %s",
-        addr_ip4_str(), msk_ip4_str(), gw_ip4_str(), mac_addr_str());
+        wui_addr_ip4_str(), wui_msk_ip4_str(), wui_gw_ip4_str(), wui_mac_addr_str());
 }
 // MOVE TO INI FILE HANDLER
 static void stringify_net_info_for_ini(char * dest){
 #ifdef BUDDY_ENABLE_CONNECT
     snprintf(dest, MAX_INI_SIZE, "[lan_ip4]\ntype=%s\nhostname=%s\naddress=%s\nmask=%s\ngateway=%s\n\n[connect]\naddress=%s\ntoken=%s\n",
-        netconfig.lan.flg & LAN_MSK_TYPE ? LAN_type_opt[0] : LAN_type_opt[1], netconfig.hostname, addr_ip4_str(), msk_ip4_str(), gw_ip4_str(),
-        connect_ip4_str(), netconfig.connect.token);
+        IS_LAN_STATIC(wui_lan_flg()) ? LAN_type_opt[0] : LAN_type_opt[1], wui_hostname(), wui_addr_ip4_str(), wui_msk_ip4_str(), wui_gw_ip4_str(),
+        wui_connect_ip4_str(), wui_connect_token());
 #else
     snprintf(dest, MAX_INI_SIZE, "[lan_ip4]\ntype=%s\nhostname=%s\naddress=%s\nmask=%s\ngateway=%s\n",
-        netconfig.lan.flg & LAN_MSK_TYPE ? LAN_type_opt[0] : LAN_type_opt[1], netconfig.hostname, addr_ip4_str(), msk_ip4_str(), gw_ip4_str());
+        IS_LAN_STATIC(wui_lan_flg() ? LAN_type_opt[0] : LAN_type_opt[1], wui_hostname(), wui_addr_ip4_str(), wui_msk_ip4_str(), wui_gw_ip4_str());
 #endif // BUDDY_ENABLE_CONNECT
 }
 
 static void refresh_addrs(screen_t *screen) {
-    update_netconfig(NETVAR_STATIC_LAN_ADDRS);
+    wui_update_netvars(NETVAR_STATIC_LAN_ADDRS);
     stringify_net_info_for_screen(plan_str);
     plsd->text.text = plan_str;
     plsd->text.win.flg |= WINDOW_FLG_INVALID;
@@ -97,13 +95,11 @@ static void screen_lan_settings_init(screen_t *screen) {
     plsd->items[0] = menu_item_return;
     memcpy(plsd->items + 1, _menu_lan_items, count * sizeof(menu_item_t));
 
-    update_netconfig(NETVAR_MSK(NETVAR_LAN_FLAGS));
+    wui_update_netvars(NETVAR_MSK(NETVAR_LAN_FLAGS));
 
-    plsd->items[MI_SWITCH].item.wi_switch_select.index = netconfig.lan.flg & LAN_MSK_ONOFF ? LAN_EEFLG_OFF : LAN_EEFLG_ON;
-    plsd->items[MI_TYPE].item.wi_switch_select.index = netconfig.lan.flg & LAN_MSK_TYPE ? 0 : 1;
-    if ((netconfig.lan.flg & LAN_MSK_ONOFF) == LAN_EEFLG_ON && 
-        (netconfig.lan.flg & LAN_MSK_TYPE) == LAN_EEFLG_DHCP &&
-        !dhcp_supplied_address(&eth0)) {
+    plsd->items[MI_SWITCH].item.wi_switch_select.index = IS_LAN_OFF(wui_lan_flg()) ? 1 : 0;
+    plsd->items[MI_TYPE].item.wi_switch_select.index = IS_LAN_DHCP(wui_lan_flg()) ? 1 : 0;
+    if (IS_LAN_ON(wui_lan_flg()) && IS_LAN_DHCP(wui_lan_flg()) && !wui_dhcp_supplied_addrs()) {
         conn_flg = true;
     }
 
@@ -112,8 +108,6 @@ static void screen_lan_settings_init(screen_t *screen) {
     plan_str = (char *)gui_malloc(150 * sizeof(char));
 
     //============= FILL VARIABLES ============
-
-    update_netconfig(NETVAR_MSK(NETVAR_MAC_ADDR));
     refresh_addrs(screen);
 }
 static uint8_t save_config(void) {
@@ -123,15 +117,8 @@ static uint8_t save_config(void) {
 
 static uint8_t load_config(void) {
 
-    networkconfig_t tmp_config;
-    tmp_config.lan.flg = netconfig.lan.flg;
-#if BUDDY_ENABLE_DNS
-    tmp_config.dns1_ip4.addr = tmp_config.dns2_ip4.addr = 0;
-#endif //BUDDY_ENABLE_DNS
-    tmp_config.set_flg = 0;
-
-    if (ini_load_file(&tmp_config, load_netconfig_ini_handler)) {
-        return set_loaded_netconfig(&tmp_config);
+    if (ini_load_file(wui_get_tmp_netconfig(), wui_get_ini_load_handler())) {
+        return wui_set_loaded_netvars();
     } else {
         return 0;
     }
@@ -142,7 +129,7 @@ static int screen_lan_settings_event(screen_t *screen, window_t *window,
     window_header_events(&(plsd->header));
 
     if (conn_flg) {
-        if ((netconfig.lan.flg & LAN_MSK_TYPE) == LAN_EEFLG_DHCP && dhcp_supplied_address(&eth0)) {
+        if (IS_LAN_DHCP(wui_lan_flg()) && wui_dhcp_supplied_addrs()) {
             conn_flg = false;
             refresh_addrs(screen);
         }
@@ -157,18 +144,18 @@ static int screen_lan_settings_event(screen_t *screen, window_t *window,
         screen_close();
         return 1;
     case MI_SWITCH: {
-        if ((netconfig.lan.flg & LAN_MSK_ONOFF) == LAN_EEFLG_ON) {
-            lan_turn_off();
+        if (IS_LAN_ON(wui_lan_flg())) {
+            wui_lan_off();
             refresh_addrs(screen);
         } else {
-            lan_turn_on();
+            wui_lan_on();
             refresh_addrs(screen);
             conn_flg = true;
         }
         break;
     }
     case MI_TYPE: {
-        if ((netconfig.lan.flg & LAN_MSK_TYPE) == LAN_EEFLG_DHCP) {
+        if (IS_LAN_DHCP(wui_lan_flg())) {
             if (eeprom_get_var(EEVAR_LAN_IP4_ADDR).ui32 == 0) {
                 if (gui_msgbox("Static IPv4 addresses were not set.",
                     MSGBOX_BTN_OK | MSGBOX_ICO_ERROR) == MSGBOX_RES_OK) {
@@ -176,12 +163,12 @@ static int screen_lan_settings_event(screen_t *screen, window_t *window,
                 }
                 return 0;
             }
-            lan_set_static();
+            wui_lan_set_static();
             refresh_addrs(screen);
         } else {
-            lan_set_dhcp();
+            wui_lan_set_dhcp();
             refresh_addrs(screen);
-            if ((netconfig.lan.flg & LAN_MSK_ONOFF) == LAN_EEFLG_ON) {
+            if (IS_LAN_ON(wui_lan_flg())) {
                 conn_flg = true;
             }
         }
@@ -216,10 +203,10 @@ static int screen_lan_settings_event(screen_t *screen, window_t *window,
         } else {
             if (load_config()) {
                 if (gui_msgbox("Settings successfully loaded", MSGBOX_BTN_OK | MSGBOX_ICO_INFO) == MSGBOX_RES_OK) {
-                    plsd->items[MI_TYPE].item.wi_switch_select.index = netconfig.lan.flg & LAN_MSK_TYPE ? 0 : 1;
+                    plsd->items[MI_TYPE].item.wi_switch_select.index = IS_LAN_DHCP(wui_lan_flg()) ? 1 : 0;
                     window_invalidate(plsd->menu.win.id);
                     refresh_addrs(screen);
-                    if ((netconfig.lan.flg & LAN_MSK_TYPE) == LAN_EEFLG_DHCP) {
+                    if (IS_LAN_DHCP(wui_lan_flg())) {
                         conn_flg = true;
                     }
                 }

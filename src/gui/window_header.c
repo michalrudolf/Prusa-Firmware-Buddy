@@ -22,7 +22,7 @@ int16_t WINDOW_CLS_HEADER = 0;
 static void update_ETH_icon(window_header_t *window) {
     ETH_STATUS_t eth_status = wui_eth_status();
     if (eth_status != ETH_UNLINKED) {
-        if(eth_status == ETH_DHCP_SUPP || eth_status == ETH_STATIC_UP){
+        if(eth_status == ETH_NETIF_UP){
             p_window_header_icon_active(window, HEADER_ICON_LAN);
         } else {
             p_window_header_icon_on(window, HEADER_ICON_LAN);

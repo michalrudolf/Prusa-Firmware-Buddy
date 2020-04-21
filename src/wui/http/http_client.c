@@ -11,12 +11,13 @@
 #include "wui_api.h"
 #include "stm32f4xx_hal.h"
 #include <string.h>
-#include "eeprom.h"
+#include "wui_eeprom_api.h"
 #include "lwip/altcp.h"
 #include "lwip.h"
 #include "marlin_vars.h"
 #include "dbg.h"
 #include "wui_api.h"
+#include "netif_settings.h"
 
 #define CLIENT_CONNECT_DELAY      1000 // 1000 = 1 Sec.
 #define CONNECT_SERVER_PORT       8000
@@ -598,9 +599,9 @@ void get_ack_str(httpc_req_t *request, char *data, const uint32_t buf_len) {
 
 static void create_http_header(char *http_header_str, uint32_t content_length, httpc_req_t *request) {
     _dbg("creating request header");
-    char printer_token[CONNECT_TOKEN_SIZE + 1]; // extra space of end of line
-    variant8_t printer_token_ptr = eeprom_get_var(EEVAR_CONNECT_TOKEN);
-    strlcpy(printer_token, printer_token_ptr.pch, CONNECT_TOKEN_SIZE + 1);
+    char printer_token[CONNECT_TOKEN_LEN + 1]; // extra space of end of line
+    variant8_t printer_token_ptr = wui_eeprom_get_var(NETVAR_CONNECT_TOKEN);
+    strlcpy(printer_token, printer_token_ptr.pch, CONNECT_TOKEN_LEN + 1);
     variant8_done(&printer_token_ptr);
 #define STR_SIZE_MAX 50
     char uri[STR_SIZE_MAX] = { 0 };
@@ -660,7 +661,7 @@ static wui_err buddy_http_client_req(httpc_req_t *request) {
     char host_ip4_str[IP4_ADDR_STR_SIZE];
     const char *header_plus_data;
 
-    host_ip4.addr = eeprom_get_var(EEVAR_CONNECT_IP4).ui32;
+    host_ip4.addr = wui_eeprom_get_var(NETVAR_CONNECT_IP4).ui32;
     strlcpy(host_ip4_str, ip4addr_ntoa(&host_ip4), IP4_ADDR_STR_SIZE);
 
     header_plus_data = create_http_request(request);
@@ -723,7 +724,7 @@ static wui_err buddy_http_client_req(httpc_req_t *request) {
 
 void buddy_httpc_handler() {
 
-    if (eeprom_get_var(EEVAR_CONNECT_IP4).ui32 == 0) {
+    if (wui_eeprom_get_var(NETVAR_CONNECT_IP4).ui32 == 0) {
         return;
     }
 

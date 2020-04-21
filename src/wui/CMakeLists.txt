@@ -16,6 +16,7 @@ add_library(
   lwip.c
   ethernetif.c
   netif_settings.c
+  wui_eeprom_api.c
 )
 
 target_include_directories(
