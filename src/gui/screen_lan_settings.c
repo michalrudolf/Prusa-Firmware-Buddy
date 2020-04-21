@@ -130,7 +130,7 @@ static uint8_t load_config(void) {
 #endif //BUDDY_ENABLE_DNS
     tmp_config.set_flg = 0;
 
-    if (ini_load_file(&tmp_config)) {
+    if (ini_load_file(&tmp_config, load_netconfig_ini_handler)) {
         return set_loaded_netconfig(&tmp_config);
     } else {
         return 0;

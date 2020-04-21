@@ -2,7 +2,8 @@
 #define NETIF_SETTINGS_H
 
 #include <stdint.h>
-#include "lwip.h"
+#include "eeprom.h"
+#include "ip_addr.h"
 #define NETVAR_MSK(n_id) ((uint16_t)1 << (n_id))
 #define NETVAR_STATIC_LAN_ADDRS \
     (NETVAR_MSK(NETVAR_LAN_IP4_ADDR) | NETVAR_MSK(NETVAR_LAN_IP4_MSK) | NETVAR_MSK(NETVAR_LAN_IP4_GW))
@@ -66,7 +67,7 @@ const char * connect_ip4_str(void);
 void update_netconfig(uint32_t msk);
 void lan_turn_off(void);
 void lan_turn_on(void);
-
+int load_netconfig_ini_handler(void *user, const char *section, const char *name, const char *value);
 
 
 #endif //NETIF_SETTINGS_H

@@ -122,13 +122,7 @@ void StartWebServerTask(void const *argument) {
     #endif //BUDDY_ENABLE_DNS
     config.set_flg = 0;
     if(ini_load_file(&config)){
-        if(set_loaded_netconfig(&config)){
-            // SUCCESS
-        } else {
-            // FAIL: wrong config data
-        }
-    } else {
-        //FAIL: read error
+        set_loaded_netconfig(&config)
     }
 #endif //BUDDY_ENABLE_INI_LOAD_AFTER_START
 

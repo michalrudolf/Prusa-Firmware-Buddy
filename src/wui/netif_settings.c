@@ -1,9 +1,8 @@
 #include "netif_settings.h"
-#include "eeprom.h"
-#include "lwip/dhcp.h"
 #include "lwip/netifapi.h"
 #include <string.h>
 #include "dns.h"
+#include "lwip.h"
 
 #define MAX_UINT16  65535
 #define MAC_ADDR_START    0x1FFF781A //MM:MM:MM:SS:SS:SS
@@ -213,4 +212,67 @@ void lan_turn_on(void){
     if (netif_is_link_up(&eth0)) {
         netifapi_netif_set_up(&eth0);
     }
+}
+
+int load_netconfig_ini_handler(void *user, const char *section, const char *name, const char *value) {
+    networkconfig_t *tmp_config = (networkconfig_t *)user;
+#define MATCH(s, n) strcmp(section, s) == 0 && strcmp(name, n) == 0
+    if (MATCH("lan_ip4", "type")) {
+        if (strncmp(value, "DHCP", 4) == 0 || strncmp(value, "dhcp", 4) == 0) {
+            CHANGE_LAN_TO_DHCP(tmp_config->lan.flg);
+            tmp_config->set_flg |= NETVAR_MSK(NETVAR_LAN_FLAGS);
+        } else if (strncmp(value, "STATIC", 6) == 0 || strncmp(value, "static", 6) == 0) {
+            CHANGE_LAN_TO_STATIC(tmp_config->lan.flg);
+            tmp_config->set_flg |= NETVAR_MSK(NETVAR_LAN_FLAGS);
+        }
+    } else if (MATCH("lan_ip4", "hostname")) {
+        strlcpy(tmp_config->hostname, value, LAN_HOSTNAME_MAX_LEN + 1);
+        tmp_config->hostname[LAN_HOSTNAME_MAX_LEN] = '\0';
+        tmp_config->set_flg |= NETVAR_MSK(NETVAR_HOSTNAME);
+    } else if (MATCH("lan_ip4", "address")) {
+        if (ip4addr_aton(value, &tmp_config->lan.addr_ip4)) {
+            tmp_config->set_flg |= NETVAR_MSK(NETVAR_LAN_IP4_ADDR);
+        }
+    } else if (MATCH("lan_ip4", "mask")) {
+        if (ip4addr_aton(value, &tmp_config->lan.msk_ip4)) {
+            tmp_config->set_flg |= NETVAR_MSK(NETVAR_LAN_IP4_MSK);
+        }
+    } else if (MATCH("lan_ip4", "gateway")) {
+        if (ip4addr_aton(value, &tmp_config->lan.gw_ip4)) {
+            tmp_config->set_flg |= NETVAR_MSK(NETVAR_LAN_IP4_GW);
+        }
+    }
+#if BUDDY_ENABLE_DNS
+    else if (MATCH("lan_ip4", "dns1")) {
+        if (ip4addr_aton(value, &tmp_config->dns1_ip4)) {
+            tmp_config->set_flg |= NETVAR_MSK(NETVAR_DNS1_IP4);
+        }
+    } else if (MATCH("lan_ip4", "dns2")) {
+        if (ip4addr_aton(value, &tmp_config->dns2_ip4)) {
+            tmp_config->set_flg |= NETVAR_MSK(NETVAR_DNS2_IP4);
+        }
+    }
+#endif //BUDDY_ENABLE_DNS
+#ifdef BUDDY_ENABLE_CONNECT
+    else if (MATCH("connect", "port")) {
+        int32_t tmp_port = atoi(value);
+        if ( tmp_port > 0 && tmp_port < MAX_UINT16){
+            tmp_config->connect.port = tmp_port;
+            tmp_config->set_flg |= NETVAR_MSK(NETVAR_CONNECT_PORT);
+        }
+    }
+    else if (MATCH("connect", "address")) {
+        if (ip4addr_aton(value, &tmp_config->connect.ip4)) {
+            tmp_config->set_flg |= NETVAR_MSK(NETVAR_CONNECT_IP4);
+        }
+    } else if (MATCH("connect", "token")) {
+        strlcpy(tmp_config->connect.token, value, CONNECT_TOKEN_SIZE + 1);
+        tmp_config->connect.token[CONNECT_TOKEN_SIZE] = '\0';
+        tmp_config->set_flg |= NETVAR_MSK(NETVAR_CONNECT_TOKEN);
+    }
+#endif // BUDDY_ENABLE_CONNECT
+    else {
+        return 0; /* unknown section/name, error */
+    }
+    return 1;
 }
