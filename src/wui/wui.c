@@ -40,6 +40,9 @@ static void update_wui_vars(void) {
     wui_vars.pos[Z_AXIS_POS] = wui_marlin_vars->pos[Z_AXIS_POS];
     wui_vars.temp_nozzle = wui_marlin_vars->temp_nozzle;
     wui_vars.temp_bed = wui_marlin_vars->temp_bed;
+    wui_vars.target_nozzle = wui_marlin_vars->target_nozzle;
+    wui_vars.target_bed = wui_marlin_vars->target_bed;
+    wui_vars.fan_speed = wui_marlin_vars->fan_speed;
     wui_vars.print_speed = wui_marlin_vars->print_speed;
     wui_vars.flow_factor = wui_marlin_vars->flow_factor;
     wui_vars.print_dur = wui_marlin_vars->print_duration;
@@ -107,10 +110,8 @@ void StartWebServerTask(void const *argument) {
     // marlin client initialization
     wui_marlin_vars = marlin_client_init(); // init the client
     // force update variables when starts
-    if (wui_marlin_vars) {
-        wui_marlin_vars = marlin_update_vars(MARLIN_VAR_MSK_WUI);
-        update_wui_vars();
-    }
+    marlin_client_set_event_notify(MARLIN_EVT_MSK_DEF - MARLIN_EVT_MSK_FSM);
+    marlin_client_set_change_notify(MARLIN_VAR_MSK_DEF | MARLIN_VAR_MSK_WUI);
     // LwIP related initalizations
     MX_LWIP_Init();
     http_server_init();

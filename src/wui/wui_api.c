@@ -21,7 +21,81 @@
 // for data exchange between wui thread and HTTP thread
 static wui_vars_t wui_vars_copy;
 
-void get_telemetry_data(char *data, const uint32_t buf_len) {
+void get_telemetry_for_connect(char *data, const uint32_t buf_len) {
+
+    osStatus status = osMutexWait(wui_thread_mutex_id, osWaitForever);
+    if (status == osOK) {
+        wui_vars_copy = wui_vars;
+    }
+    osMutexRelease(wui_thread_mutex_id);
+
+    float z_pos_mm = wui_vars_copy.pos[Z_AXIS_POS];
+    const char *filament_material = filaments[get_filament()].name;
+
+    if (!wui_vars_copy.sd_printing) {
+        snprintf(data, buf_len, "{"
+                                "\"temp_nozzle\":%.2f,"
+                                "\"temp_bed\":%.2f,"
+                                "\"target_nozzle\":%.2f,"
+                                "\"target_bed\":%.2f,"
+                                "\"p_fan\":%d,"
+                                "\"material\":\"%s\","
+                                "\"pos_z_mm\":%.2f,"
+                                "\"printing_speed\":%d,"
+                                "\"flow_factor\":%d"
+                                "}",
+            wui_vars_copy.temp_nozzle, wui_vars_copy.temp_bed,
+            wui_vars_copy.target_nozzle, wui_vars_copy.target_bed,
+            wui_vars_copy.fan_speed, filament_material,
+            z_pos_mm, wui_vars_copy.print_speed, wui_vars_copy.flow_factor);
+
+         return;
+    }
+
+    uint8_t percent_done;
+    uint32_t estimated_time;
+    char time_2_end[9], print_time[13];
+    if (is_percentage_valid(wui_vars_copy.print_dur)) {
+        estimated_time = progress_time2end(wui_vars_copy.print_speed);
+        percent_done = progress_get_percentage();
+        progress_format_time2end(time_2_end, wui_vars_copy.print_speed);
+    } else {
+        estimated_time = 0;
+        strlcpy(time_2_end, "N/A", 4);
+        percent_done = wui_vars_copy.sd_precent_done;
+    }
+
+    print_dur_to_string(print_time, sizeof(print_time), wui_vars_copy.print_dur);
+
+    snprintf(data, buf_len, "{"
+                            "\"temp_nozzle\":%.2f,"
+                            "\"temp_bed\":%.2f,"
+                            "\"target_nozzle\":%.2f,"
+                            "\"target_bed\":%.2f,"
+                            "\"p_fan\":%d,"
+                            "\"material\":\"%s\","
+                            "\"pos_z_mm\":%.2f,"
+                            "\"printing_speed\":%d,"
+                            "\"flow_factor\":%d,"
+                            "\"progress\":%d,"
+                            "\"print_dur\":\"%s\","     // OctoPrint API ?
+                            "\"time_est\":\"%s\","
+                            "\"printing_time\":%ld,"     // Connect
+                            "\"estimated_time\":%ld,"
+                            "\"project_name\":\"%s\","
+                            "\"state\":\"PRINTING\""
+                            "}",
+        wui_vars_copy.temp_nozzle, wui_vars_copy.temp_bed,
+        wui_vars_copy.target_nozzle, wui_vars_copy.target_bed,
+        wui_vars_copy.fan_speed, filament_material,
+        z_pos_mm, wui_vars_copy.print_speed, wui_vars_copy.flow_factor,
+        percent_done, print_time, time_2_end,
+        wui_vars_copy.print_dur, estimated_time,
+        wui_vars_copy.gcode_name);
+}
+
+
+void get_telemetry_for_local(char *data, const uint32_t buf_len) {
 
     osStatus status = osMutexWait(wui_thread_mutex_id, osWaitForever);
     if (status == osOK) {
@@ -47,6 +121,7 @@ void get_telemetry_data(char *data, const uint32_t buf_len) {
                                 "}",
             actual_nozzle, actual_heatbed, filament_material,
             z_pos_mm, print_speed, flow_factor);
+            return;
     }
 
     uint8_t percent_done;
@@ -77,6 +152,7 @@ void get_telemetry_data(char *data, const uint32_t buf_len) {
         z_pos_mm, print_speed, flow_factor,
         percent_done, print_time, time_2_end, wui_vars_copy.gcode_name);
 }
+
 
 static HTTPC_COMMAND_STATUS parse_high_level_cmd(char *json, uint32_t len) {
     char cmd_str[200];
@@ -137,7 +213,7 @@ HTTPC_COMMAND_STATUS parse_http_reply(char *reply, uint32_t reply_len, httpc_hea
     } else if (TYPE_GCODE == h_info_ptr->content_type) {
         cmd_status = parse_low_level_cmd(reply, h_info_ptr);
     } else {
-        cmd_status = CMD_REJT_CDNT_TYPE;
+        cmd_status = CMD_REJT_CONT_TYPE;
     }
     return cmd_status;
 }
