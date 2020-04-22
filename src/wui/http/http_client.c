@@ -274,7 +274,7 @@ http_parse_response_status(struct pbuf *p, u16_t *http_version, u16_t *http_stat
 /** Wait for all headers to be received, return its length and content-length (if available) */
 static err_t
 http_wait_headers(struct pbuf *p, u32_t *content_length, u16_t *total_header_len) {
-    header_info.valid_request = false;
+    header_info.valid_request = true;
     header_info.content_type = TYPE_INVALID;
     header_info.content_lenght = 0;
     header_info.command_id = 0;
@@ -301,6 +301,7 @@ http_wait_headers(struct pbuf *p, u32_t *content_length, u16_t *total_header_len
                 char content_type_str[CONENT_TYPE_STR_MAX_LEN] = {};
                 u16_t content_type_len = (u16_t)(content_type_line_end - content_type_hdr - parse_str_len);
                 if (CONENT_TYPE_STR_MAX_LEN < content_type_len) {
+                    header_info.valid_request = false;
                     return ERR_VAL;
                 }
 
@@ -312,6 +313,7 @@ http_wait_headers(struct pbuf *p, u32_t *content_length, u16_t *total_header_len
                     } else if (0 == strncmp(content_type_str, type_xgcode_str, strlen(type_xgcode_str))) {
                         header_info.content_type = TYPE_GCODE;
                     } else {
+                        header_info.valid_request = false;
                         return ERR_VAL; // quit the connection if content type is un-supported
                     }
                 }
@@ -334,6 +336,8 @@ http_wait_headers(struct pbuf *p, u32_t *content_length, u16_t *total_header_len
                     if ((len >= 0) && ((u32_t)len < HTTPC_CONTENT_LEN_INVALID)) {
                         *content_length = (u32_t)len;
                         header_info.content_lenght = (u32_t)len;
+                    } else {
+                        header_info.valid_request = false;
                     }
                 }
             }
@@ -352,6 +356,8 @@ http_wait_headers(struct pbuf *p, u32_t *content_length, u16_t *total_header_len
                 memset(command_id_num, 0, sizeof(command_id_num));
                 if (pbuf_copy_partial(p, command_id_num, command_id_num_len, command_id_hdr + parse_str_len) == command_id_num_len) {
                     header_info.command_id = atoi(command_id_num);
+                } else {
+                    header_info.valid_request = false;
                 }
             }
         }
@@ -512,6 +518,7 @@ err_t data_received_fun(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t e
     LWIP_UNUSED_ARG(tpcb);
     LWIP_UNUSED_ARG(err);
     uint32_t len_copied = 0;
+    bool continue_recv_fun = true;
     HTTPC_COMMAND_STATUS cmd_status = CMD_UNKNOWN;
     httpc_state_t *req = (httpc_state_t *)arg;
     httpc_result_t result = HTTPC_RESULT_ERR_UNKNOWN;
@@ -522,24 +529,26 @@ err_t data_received_fun(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t e
         return ERR_ARG;
     }
 
-    if (header_info.content_type == TYPE_INVALID) {
-        cmd_status = CMD_REJT_CONT_TYPE;
+    if (false == header_info.valid_request) {
         pbuf_free(p);
+        return ERR_OK;
     }
 
-    if (cmd_status == CMD_UNKNOWN && (HTTPC_RESPONSE_BUFF_SZ < p->tot_len || HTTPC_RESPONSE_BUFF_SZ < header_info.content_lenght)) {
+    if (continue_recv_fun && (HTTPC_RESPONSE_BUFF_SZ < p->tot_len || HTTPC_RESPONSE_BUFF_SZ < header_info.content_lenght)) {
         cmd_status = CMD_REJT_SIZE;
         result = HTTPC_RESULT_OK;
+        continue_recv_fun = false;
         pbuf_free(p);
     }
 
-    if (cmd_status == CMD_UNKNOWN && (p->tot_len < header_info.content_lenght || p->tot_len > header_info.content_lenght)) {
+    if (continue_recv_fun && (p->tot_len != header_info.content_lenght)) {
         cmd_status = CMD_REJT_CONT_LEN;
         result = HTTPC_RESULT_ERR_CONTENT_LEN;
+        continue_recv_fun = false;
         pbuf_free(p);
     }
 
-    if (cmd_status == CMD_UNKNOWN) {
+    if (continue_recv_fun) {
         while (len_copied < p->tot_len) {
 
             char *payload = p->payload;
@@ -569,27 +578,21 @@ err_t data_received_fun(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t e
             result = HTTPC_RESULT_OK;
         }
     }
-    u16_t status = req->rx_status;
-    httpc_close(req, result, status, ERR_OK);
-    if (status == 200) {
-        // send acknowledgment  TODO: only if it is answer to /p/telemetry
-        if (CMD_UNKNOWN != cmd_status) {
-            httpc_req_t request;
-            request.cmd_id = header_info.command_id;
-            request.cmd_status = cmd_status;
-            request.req_type = REQ_ACK;
-            if (CMD_ACCEPTED != cmd_status) {
-                request.connect_event_type = EVENT_REJECTED;
-            } else {
-                request.connect_event_type = EVENT_ACCEPTED;
-            }
 
-            send_request_to_httpc(request);
+    httpc_close(req, result, req->rx_status, ERR_OK);
+
+    if (CMD_UNKNOWN != cmd_status) {
+        httpc_req_t request;
+        request.cmd_id = header_info.command_id;
+        request.cmd_status = cmd_status;
+        request.req_type = REQ_ACK;
+        if (CMD_ACCEPTED != cmd_status) {
+            request.connect_event_type = EVENT_REJECTED;
+        } else {
+            request.connect_event_type = EVENT_ACCEPTED;
         }
-    } else if (status == 401 || status == 403) {
-        // TODO: Error message to GUI: bad Printer-Token
-    } else if (status == 404) {
-        // TODO: Error message to GUI: bad connect address
+
+        send_request_to_httpc(request);
     }
 
     return ERR_OK;
@@ -729,7 +732,8 @@ static wui_err buddy_http_client_req(httpc_req_t *request) {
     altcp_poll(req->pcb, httpc_tcp_poll, HTTPC_POLL_INTERVAL);
     altcp_sent(req->pcb, httpc_tcp_sent);
     req->recv_fn = data_received_fun; // callback when response data received
-
+    req->conn_settings->result_fn = NULL;
+    req->conn_settings->headers_done_fn = NULL;
     /* set up request buffer */
     req_len2 = strlcpy((char *)req->request->payload, header_plus_data, req_len + 1);
     if (req_len2 != req_len) {
