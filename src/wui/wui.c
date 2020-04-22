@@ -26,7 +26,7 @@
 osSemaphoreId tcp_wui_semaphore_id = 0;
 osMessageQDef(tcp_wui_queue, TCP_WUI_QUEUE_SIZE, uint32_t);
 osMessageQId tcp_wui_queue_id = 0;
-osPoolDef(tcp_wui_mpool, TCP_WUI_QUEUE_SIZE, wui_high_cmd_t);
+osPoolDef(tcp_wui_mpool, TCP_WUI_QUEUE_SIZE, wui_cmd_t);
 osPoolId tcp_wui_mpool_id;
 
 osMutexDef(wui_thread_mutex);   // Mutex object for exchanging WUI thread TCP thread
@@ -56,24 +56,28 @@ static void update_wui_vars(void) {
     osMutexRelease(wui_thread_mutex_id);
 }
 
-static int process_wui_request(char *request) {
+static int process_wui_request(wui_cmd_t *request) {
 
-    if (strncmp(request, "!cip ", 5) == 0) {
-        uint32_t ip;
-        if (sscanf(request + 5, "%lu", &ip)) {
-            wui_set_netvar(NETVAR_CONNECT_IP4, variant8_ui32(ip));
+    if (request->lvl == HIGH_LVL_CMD){
+        if (request->high_lvl_cmd == CMD_SET){
+            if (strncmp(request->arg, "!cip ", 5) == 0) {
+                uint32_t ip;
+                if (sscanf(request->arg + 5, "%lu", &ip)) {
+                    wui_set_netvar(NETVAR_CONNECT_IP4, variant8_ui32(ip));
+                }
+            } else if (strncmp(request->arg, "!ck ", 4) == 0) {
+                variant8_t token = variant8_pchar(request->arg + 4, 0, 0);
+                wui_set_netvar(NETVAR_CONNECT_TOKEN, token);
+                //variant8_done() is not called because variant_pchar with init flag 0 doesnt hold its memory
+            } else if (strncmp(request->arg, "!cn ", 4) == 0) {
+                variant8_t hostname = variant8_pchar(request->arg + 4, 0, 0);
+                wui_set_netvar(NETVAR_HOSTNAME, hostname);
+                //variant8_done() is not called because variant_pchar with init flag 0 doesnt hold its memory
+            }
         }
-    } else if (strncmp(request, "!ck ", 4) == 0) {
-        variant8_t token = variant8_pchar(request + 4, 0, 0);
-        wui_set_netvar(NETVAR_CONNECT_TOKEN, token);
-        //variant8_done() is not called because variant_pchar with init flag 0 doesnt hold its memory
-    } else if (strncmp(request, "!cn ", 4) == 0) {
-        variant8_t hostname = variant8_pchar(request + 4, 0, 0);
-        wui_set_netvar(NETVAR_HOSTNAME, hostname);
-        //variant8_done() is not called because variant_pchar with init flag 0 doesnt hold its memory
     } else {
         _dbg("sending command: %s to marlin", request);
-        marlin_gcode(request);
+        marlin_gcode(request->arg);
     }
     return 1;
 }
@@ -87,7 +91,7 @@ static void wui_queue_cycle() {
         rptr = wui_event.value.p;
         if (NULL != wui_event.value.p) {
             _dbg("command in wui queue");
-            process_wui_request(rptr->gcode_cmd);
+            process_wui_request(rptr);
         }
         osStatus status = osPoolFree(tcp_wui_mpool_id, rptr); // free memory allocated for message
         if (osOK != status) {

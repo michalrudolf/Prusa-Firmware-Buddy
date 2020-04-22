@@ -44,14 +44,10 @@ typedef enum {
 } CMD_LVL;
 
 typedef struct {
-    char gcode_cmd[100];
-} wui_low_cmd_t;
-
-typedef struct {
-    HTTPC_HIGH_LVL_CMD cmd;
+    CMD_LVL lvl;
+    HTTPC_HIGH_LVL_CMD high_lvl_cmd;
     char arg[100];
-    //TODO: arg type depends on the command (vartiant8_t args[HIGH_CMD_MAX_ARGS_CNT] or union)
-} wui_high_cmd_t;
+} wui_cmd_t;
 
 
 #ifdef __cplusplus

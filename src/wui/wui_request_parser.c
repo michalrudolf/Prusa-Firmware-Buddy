@@ -63,19 +63,22 @@ static HTTPC_COMMAND_STATUS parse_low_level_cmd(const char *request, httpc_heade
 
     } while (i < h_info_ptr->content_lenght);
 
+    wui_cmd_t cmd;
+    cmd.lvl = LOW_LVL_CMD;
     for (uint32_t cnt = 0; cnt < cmd_count; cnt++) {
-        send_request_to_wui(LOW_LVL_CMD, gcode_str[cnt]);
+        strcpy(cmd.arg, gcode_str[cnt]);
+        send_request_to_wui(&cmd);
     }
 
     return CMD_STATUS_ACCEPTED;
 }
 
-static uint8_t parse_high_cmd_args(wui_high_cmd_t *command, const char *json, jsmntok_t *t, int *i){
+static uint8_t parse_high_cmd_args(wui_cmd_t *command, const char *json, jsmntok_t *t, int *i){
     if (json_cmp(json, &t[*i], "args") != 0 || t[*i + 1].type != JSMN_ARRAY || t[*i].size > HIGH_CMD_MAX_ARGS_CNT){
         return 1;
     }
     (*i)++;
-    switch (command->cmd) {
+    switch (command->high_lvl_cmd) {
         case CMD_SEND_INFO:
             strlcpy(command->arg, json + t[*i].start, (t[*i].end - t[*i].start + 1));
             (*i)++;
@@ -118,7 +121,7 @@ uint32_t httpc_json_parser(char *json, uint32_t len) {
         return 1;
     }
 
-    wui_high_cmd_t command;
+    wui_cmd_t command;
 
     for (int i = 0; i < ret; i++) {
         if (json_cmp(json, &t[i], "command") == 0) {
@@ -126,10 +129,10 @@ uint32_t httpc_json_parser(char *json, uint32_t len) {
             i++;
             
             if(strcmp(request, "SEND_INFO") == 0){
-                command.cmd = CMD_SEND_INFO;
+                command.high_lvl_cmd = CMD_SEND_INFO;
             // TODO: other high level commands
             } else {
-                command.cmd = CMD_UNKNOWN;
+                command.high_lvl_cmd = CMD_UNKNOWN;
             }
 
             if(parse_high_cmd_args(&command, json, t, &i)){
@@ -138,7 +141,7 @@ uint32_t httpc_json_parser(char *json, uint32_t len) {
         }
     }
     
-    send_request_to_wui(HIGH_LVL_CMD, &command);
+    send_request_to_wui(&command);
     ret_code = 0;
     return ret_code;
 }
@@ -147,7 +150,7 @@ void httpd_json_parser(char *json, uint32_t len) {
     int ret;
     jsmn_parser parser;
     jsmntok_t t[128]; // Just a raw value, we do not expect more that 128 tokens
-    char request[MAX_REQ_MARLIN_SIZE];
+    char request_str[MAX_REQ_MARLIN_SIZE];
 
     jsmn_init(&parser);
     ret = jsmn_parse(&parser, json, len, t, sizeof(t) / sizeof(jsmntok_t));
@@ -158,38 +161,40 @@ void httpd_json_parser(char *json, uint32_t len) {
     }
 
     for (int i = 0; i < ret; i++) {
+        wui_cmd_t request;
 #if HTTP_DUBAI_HACK
         if (json_cmp(json, &t[i], project_firmware_name) == 0) {
 #else
         if (json_cmp(json, &t[i], "command") == 0) {
 #endif //HTTP_DUBAI_HACK
-            strlcpy(request, json + t[i + 1].start, (t[i + 1].end - t[i + 1].start + 1));
+            strlcpy(request.arg, json + t[i + 1].start, (t[i + 1].end - t[i + 1].start + 1));
+            request.lvl = LOW_LVL_CMD;
             i++;
-            _dbg("command received: %s", request);
-            send_request_to_wui(LOW_LVL_CMD, request);
+            _dbg("command received: %s", request.arg);
+            send_request_to_wui(&request);
         } else if (json_cmp(json, &t[i], "connect_ip") == 0) {
-            strlcpy(request, json + t[i + 1].start, t[i + 1].end - t[i + 1].start + 1);
+            strlcpy(request_str, json + t[i + 1].start, t[i + 1].end - t[i + 1].start + 1);
             ip4_addr_t tmp_addr;
-            if (ip4addr_aton(request, &tmp_addr)) {
-                wui_high_cmd_t connect_request;
-                snprintf(connect_request.arg, MAX_REQ_MARLIN_SIZE, "!cip %lu", tmp_addr.addr);
-                connect_request.cmd = CMD_SET;
-                send_request_to_wui(HIGH_LVL_CMD, &connect_request);
+            if (ip4addr_aton(request_str, &tmp_addr)) {
+                snprintf(request.arg, MAX_REQ_MARLIN_SIZE, "!cip %lu", tmp_addr.addr);
+                request.high_lvl_cmd = CMD_SET;
+                request.lvl = HIGH_LVL_CMD;
+                send_request_to_wui(&request);
             }
             i++;
         } else if (json_cmp(json, &t[i], "connect_key") == 0) {
-            strlcpy(request, json + t[i + 1].start, t[i + 1].end - t[i + 1].start + 1);
-            wui_high_cmd_t connect_request;
-            snprintf(connect_request.arg, MAX_REQ_MARLIN_SIZE, "!ck %s", request);
-            connect_request.cmd = CMD_SET;
-            send_request_to_wui(HIGH_LVL_CMD, &connect_request);
+            strlcpy(request_str, json + t[i + 1].start, t[i + 1].end - t[i + 1].start + 1);
+            snprintf(request.arg, MAX_REQ_MARLIN_SIZE, "!ck %s", request_str);
+            request.high_lvl_cmd = CMD_SET;
+            request.lvl = HIGH_LVL_CMD;
+            send_request_to_wui(&request);
             i++;
         } else if (json_cmp(json, &t[i], "connect_name") == 0) {
-            strlcpy(request, json + t[i + 1].start, t[i + 1].end - t[i + 1].start + 1);
-            wui_high_cmd_t connect_request;
-            snprintf(connect_request.arg, MAX_REQ_MARLIN_SIZE, "!cn %s", request);
-            connect_request.cmd = CMD_SET;
-            send_request_to_wui(HIGH_LVL_CMD, &connect_request);
+            strlcpy(request_str, json + t[i + 1].start, t[i + 1].end - t[i + 1].start + 1);
+            snprintf(request.arg, MAX_REQ_MARLIN_SIZE, "!cn %s", request_str);
+            request.high_lvl_cmd = CMD_SET;
+            request.lvl = HIGH_LVL_CMD;
+            send_request_to_wui(&request);
             i++;
         }
     }
