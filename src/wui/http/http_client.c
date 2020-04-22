@@ -534,16 +534,9 @@ err_t data_received_fun(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t e
         return ERR_OK;
     }
 
-    if (continue_recv_fun && (HTTPC_RESPONSE_BUFF_SZ < p->tot_len || HTTPC_RESPONSE_BUFF_SZ < header_info.content_lenght)) {
+    if (continue_recv_fun && (HTTPC_RESPONSE_BUFF_SZ < p->tot_len)) {
         cmd_status = CMD_REJT_SIZE;
         result = HTTPC_RESULT_OK;
-        continue_recv_fun = false;
-        pbuf_free(p);
-    }
-
-    if (continue_recv_fun && (p->tot_len != header_info.content_lenght)) {
-        cmd_status = CMD_REJT_CONT_LEN;
-        result = HTTPC_RESULT_ERR_CONTENT_LEN;
         continue_recv_fun = false;
         pbuf_free(p);
     }
@@ -593,6 +586,8 @@ err_t data_received_fun(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t e
         }
 
         send_request_to_httpc(request);
+    } else {
+        _dbg("bug in FW!");
     }
 
     return ERR_OK;
@@ -732,8 +727,6 @@ static wui_err buddy_http_client_req(httpc_req_t *request) {
     altcp_poll(req->pcb, httpc_tcp_poll, HTTPC_POLL_INTERVAL);
     altcp_sent(req->pcb, httpc_tcp_sent);
     req->recv_fn = data_received_fun; // callback when response data received
-    req->conn_settings->result_fn = NULL;
-    req->conn_settings->headers_done_fn = NULL;
     /* set up request buffer */
     req_len2 = strlcpy((char *)req->request->payload, header_plus_data, req_len + 1);
     if (req_len2 != req_len) {
