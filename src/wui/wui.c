@@ -26,7 +26,7 @@
 osSemaphoreId tcp_wui_semaphore_id = 0;
 osMessageQDef(tcp_wui_queue, TCP_WUI_QUEUE_SIZE, uint32_t);
 osMessageQId tcp_wui_queue_id = 0;
-osPoolDef(tcp_wui_mpool, TCP_WUI_QUEUE_SIZE, wui_cmd_t);
+osPoolDef(tcp_wui_mpool, TCP_WUI_QUEUE_SIZE, wui_high_cmd_t);
 osPoolId tcp_wui_mpool_id;
 
 osMutexDef(wui_thread_mutex);   // Mutex object for exchanging WUI thread TCP thread

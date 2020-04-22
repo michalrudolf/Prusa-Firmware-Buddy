@@ -27,9 +27,32 @@ extern osMessageQId tcp_wui_queue_id;
 extern osSemaphoreId tcp_wui_semaphore_id;
 extern osMutexId wui_thread_mutex_id;
 
+typedef enum {
+    CMD_UNKNOWN,
+    CMD_SEND_INFO,
+    CMD_START_PRINT,
+    CMD_PAUSE_PRINT,
+    CMD_STOP_PRINT,
+    CMD_RESUME_PRINT,
+    CMD_SET,
+    CMD_GET,
+} HTTPC_HIGH_LVL_CMD;
+
+typedef enum {
+    HIGH_LVL_CMD,
+    LOW_LVL_CMD,
+} CMD_LVL;
+
 typedef struct {
     char gcode_cmd[100];
-} wui_cmd_t;
+} wui_low_cmd_t;
+
+typedef struct {
+    HTTPC_HIGH_LVL_CMD cmd;
+    char arg[100];
+    //TODO: arg type depends on the command (vartiant8_t args[HIGH_CMD_MAX_ARGS_CNT] or union)
+} wui_high_cmd_t;
+
 
 #ifdef __cplusplus
 }

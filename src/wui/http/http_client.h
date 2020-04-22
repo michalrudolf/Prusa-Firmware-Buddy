@@ -49,21 +49,6 @@ typedef enum {
     CMD_STATUS_ACCEPTED,
 } HTTPC_COMMAND_STATUS;
 
-typedef enum {
-    CMD_UNKNOWN,
-    CMD_SEND_INFO,
-    CMD_START_PRINT,
-    CMD_PAUSE_PRINT,
-    CMD_STOP_PRINT,
-    CMD_RESUME_PRINT,    
-} HTTPC_HIGH_LVL_CMD;
-
-typedef struct {
-    HTTPC_HIGH_LVL_CMD cmd;
-    char arg[100];
-    //TODO: arg type depends on the command (vartiant8_t args[HIGH_CMD_MAX_ARGS_CNT] or union)
-} high_cmd_t;
-
 typedef struct {
     const char name[100];
     HTTPC_COMMAND_STATUS status_code;
