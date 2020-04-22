@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include "c_wui_api.h"
+#include "wui_api.h"
 
 typedef enum {
     MI_RETURN,

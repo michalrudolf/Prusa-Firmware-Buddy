@@ -63,7 +63,7 @@
 
 #include "dbg.h"
 #include "ethernetif.h"
-#include "wui_eeprom_api.h"
+#include "wui_custom_api.h"
 #include "netif_settings.h"
 
 ip4_addr_t ipaddr;
@@ -74,7 +74,7 @@ void Error_Handler(void);
 
 void netif_link_callback(struct netif *eth) {
     ethernetif_update_config(eth);
-    uint8_t ee_flag = wui_eeprom_get_var(NETVAR_LAN_FLAGS).ui8;
+    uint8_t ee_flag = wui_get_netvar(NETVAR_LAN_FLAGS).ui8;
     if (netif_is_link_up(eth)) {
         if (IS_LAN_ON(ee_flag)) {
             netif_set_up(eth);
@@ -85,7 +85,7 @@ void netif_link_callback(struct netif *eth) {
 }
 
 void netif_status_callback(struct netif *eth) {
-    uint8_t ee_flag = wui_eeprom_get_var(NETVAR_LAN_FLAGS).ui8;
+    uint8_t ee_flag = wui_get_netvar(NETVAR_LAN_FLAGS).ui8;
     if (netif_is_up(eth)) {
         if (IS_LAN_DHCP(ee_flag)) {
             dhcp_start(eth);

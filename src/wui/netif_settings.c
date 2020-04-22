@@ -1,5 +1,5 @@
 #include "netif_settings.h"
-#include "wui_eeprom_api.h"
+#include "wui_custom_api.h"
 #include "lwip/netifapi.h"
 #include <string.h>
 #include "dns.h"
@@ -37,7 +37,7 @@ void lan_set_static(void) {
         netifapi_netif_set_down(&eth0);
     }
     CHANGE_LAN_TO_STATIC(netconfig.lan.flg);
-    wui_eeprom_set_var(NETVAR_LAN_FLAGS, variant8_ui8(netconfig.lan.flg));
+    wui_set_netvar(NETVAR_LAN_FLAGS, variant8_ui8(netconfig.lan.flg));
     netifapi_netif_set_addr(&eth0,
         (const ip4_addr_t *)&(netconfig.lan.addr_ip4),
         (const ip4_addr_t *)&(netconfig.lan.msk_ip4),
@@ -57,7 +57,7 @@ void lan_set_dhcp(void) {
         netifapi_netif_set_down(&eth0);
     }
     CHANGE_LAN_TO_DHCP(netconfig.lan.flg);
-    wui_eeprom_set_var(NETVAR_LAN_FLAGS, variant8_ui8(netconfig.lan.flg));
+    wui_set_netvar(NETVAR_LAN_FLAGS, variant8_ui8(netconfig.lan.flg));
     if (netif_is_link_up(&eth0) && IS_LAN_ON(netconfig.lan.flg)) {
         netifapi_netif_set_up(&eth0);
     }
@@ -84,12 +84,12 @@ uint8_t set_loaded_netconfig(void){
             ) {
                 return 0;
             }
-            wui_eeprom_set_var(NETVAR_LAN_IP4_ADDR, variant8_ui32(tmp_netconfig.lan.addr_ip4.addr));
-            wui_eeprom_set_var(NETVAR_LAN_IP4_MSK, variant8_ui32(tmp_netconfig.lan.msk_ip4.addr));
-            wui_eeprom_set_var(NETVAR_LAN_IP4_GW, variant8_ui32(tmp_netconfig.lan.gw_ip4.addr));
+            wui_set_netvar(NETVAR_LAN_IP4_ADDR, variant8_ui32(tmp_netconfig.lan.addr_ip4.addr));
+            wui_set_netvar(NETVAR_LAN_IP4_MSK, variant8_ui32(tmp_netconfig.lan.msk_ip4.addr));
+            wui_set_netvar(NETVAR_LAN_IP4_GW, variant8_ui32(tmp_netconfig.lan.gw_ip4.addr));
 #if BUDDY_ENABLE_DNS
-            wui_eeprom_set_var(NETVAR_DNS1_IP4, variant8_ui32(tmp_netconfig.dns1_ip4.addr));
-            wui_eeprom_set_var(NETVAR_DNS2_IP4, variant8_ui32(tmp_netconfig.dns2_ip4.addr));
+            wui_set_netvar(NETVAR_DNS1_IP4, variant8_ui32(tmp_netconfig.dns1_ip4.addr));
+            wui_set_netvar(NETVAR_DNS2_IP4, variant8_ui32(tmp_netconfig.dns2_ip4.addr));
             netconfig.lan.addr_ip4.addr = tmp_netconfig.lan.addr_ip4.addr;
             netconfig.lan.msk_ip4.addr = tmp_netconfig.lan.msk_ip4.addr;
 #endif //BUDDY_ENABLE_DNS
@@ -102,30 +102,30 @@ uint8_t set_loaded_netconfig(void){
         strlcpy(netconfig.hostname, tmp_netconfig.hostname, LAN_HOSTNAME_LEN + 1);
         eth0.hostname = netconfig.hostname;
         variant8_t hostname = variant8_pchar(tmp_netconfig.hostname, 0, 0);
-        wui_eeprom_set_var(NETVAR_HOSTNAME, hostname);
+        wui_set_netvar(NETVAR_HOSTNAME, hostname);
         //variant8_done() is not called, variant_pchar with init flag 0 doesnt hold its memory
     }
 #ifdef BUDDY_ENABLE_CONNECT
     if (tmp_netconfig.set_flg & NETVAR_MSK(NETVAR_CONNECT_TOKEN)) {
         strlcpy(netconfig.connect.token, tmp_netconfig.connect.token, CONNECT_TOKEN_SIZE + 1);
         variant8_t token = variant8_pchar(tmp_netconfig.connect.token, 0, 0);
-        wui_eeprom_set_var(NETVAR_CONNECT_TOKEN, token);
+        wui_set_netvar(NETVAR_CONNECT_TOKEN, token);
         //variant8_done() is not called, variant_pchar with init flag 0 doesnt hold its memory
     }
     if (tmp_netconfig.set_flg & NETVAR_MSK(NETVAR_CONNECT_IP4)) {
         netconfig.connect.ip4.addr = tmp_netconfig.connect.ip4.addr;
-        wui_eeprom_set_var(NETVAR_CONNECT_IP4, variant8_ui32(tmp_netconfig.connect.ip4.addr));
+        wui_set_netvar(NETVAR_CONNECT_IP4, variant8_ui32(tmp_netconfig.connect.ip4.addr));
     }
     if (tmp_netconfig.set_flg & NETVAR_MSK(NETVAR_CONNECT_PORT)) {
         netconfig.connect.port = tmp_netconfig.connect.port;
-        wui_eeprom_set_var(NETVAR_CONNECT_PORT, variant8_ui16(tmp_netconfig.connect.port));
+        wui_set_netvar(NETVAR_CONNECT_PORT, variant8_ui16(tmp_netconfig.connect.port));
     }
 #endif // BUDDY_ENABLE_CONNECT
 
     // if type=STATIC/DHCP is in INI file   
     if (tmp_netconfig.set_flg & NETVAR_MSK(NETVAR_LAN_FLAGS)) {
         // if there was a change from STATIC to DHCP
-        if (IS_LAN_DHCP(tmp_netconfig.lan.flg) && IS_LAN_STATIC(wui_eeprom_get_var(NETVAR_LAN_FLAGS).ui8)) {
+        if (IS_LAN_DHCP(tmp_netconfig.lan.flg) && IS_LAN_STATIC(wui_get_netvar(NETVAR_LAN_FLAGS).ui8)) {
             lan_set_dhcp();
         // or STATIC to STATIC
         } else if (IS_LAN_STATIC(tmp_netconfig.lan.flg)){
@@ -151,25 +151,25 @@ static void update_addrs(uint8_t lan_flg){
         netconfig.lan.gw_ip4.addr = 0;
         return;
     }
-    netconfig.lan.addr_ip4.addr = wui_eeprom_get_var(NETVAR_LAN_IP4_ADDR).ui32;
-    netconfig.lan.msk_ip4.addr = wui_eeprom_get_var(NETVAR_LAN_IP4_MSK).ui32;
-    netconfig.lan.gw_ip4.addr = wui_eeprom_get_var(NETVAR_LAN_IP4_GW).ui32;
+    netconfig.lan.addr_ip4.addr = wui_get_netvar(NETVAR_LAN_IP4_ADDR).ui32;
+    netconfig.lan.msk_ip4.addr = wui_get_netvar(NETVAR_LAN_IP4_MSK).ui32;
+    netconfig.lan.gw_ip4.addr = wui_get_netvar(NETVAR_LAN_IP4_GW).ui32;
 }
 
 void update_netconfig(uint32_t msk){
 
     if(msk & NETVAR_MSK(NETVAR_LAN_FLAGS)){
-        netconfig.lan.flg = wui_eeprom_get_var(NETVAR_LAN_FLAGS).ui8;
+        netconfig.lan.flg = wui_get_netvar(NETVAR_LAN_FLAGS).ui8;
     }
     if((msk & NETVAR_STATIC_LAN_ADDRS) == NETVAR_STATIC_LAN_ADDRS){
-        uint8_t lan_flg = wui_eeprom_get_var(NETVAR_LAN_FLAGS).ui8;
+        uint8_t lan_flg = wui_get_netvar(NETVAR_LAN_FLAGS).ui8;
         update_addrs(lan_flg);
         strlcpy(s_addr_ip4_str, ip4addr_ntoa(&(netconfig.lan.addr_ip4)), IP4_ADDR_STR_SIZE);
         strlcpy(s_msk_ip4_str, ip4addr_ntoa(&(netconfig.lan.msk_ip4)), IP4_ADDR_STR_SIZE);
         strlcpy(s_gw_ip4_str, ip4addr_ntoa(&(netconfig.lan.gw_ip4)), IP4_ADDR_STR_SIZE);
     }
     if(msk & NETVAR_MSK(NETVAR_HOSTNAME)){
-        variant8_t hostname = wui_eeprom_get_var(NETVAR_HOSTNAME);
+        variant8_t hostname = wui_get_netvar(NETVAR_HOSTNAME);
         strlcpy(netconfig.hostname, hostname.pch, LAN_HOSTNAME_LEN + 1);
         variant8_done(&hostname);
     }
@@ -202,12 +202,12 @@ void lan_turn_off(void){
         netifapi_netif_set_down(&eth0);
     }
     TURN_LAN_OFF(netconfig.lan.flg);
-    wui_eeprom_set_var(NETVAR_LAN_FLAGS, variant8_ui8(netconfig.lan.flg));
+    wui_set_netvar(NETVAR_LAN_FLAGS, variant8_ui8(netconfig.lan.flg));
 }
 
 void lan_turn_on(void){
     TURN_LAN_ON(netconfig.lan.flg);
-    wui_eeprom_set_var(NETVAR_LAN_FLAGS, variant8_ui8(netconfig.lan.flg));
+    wui_set_netvar(NETVAR_LAN_FLAGS, variant8_ui8(netconfig.lan.flg));
     if (netif_is_link_up(&eth0)) {
         netifapi_netif_set_up(&eth0);
     }
@@ -279,7 +279,7 @@ int load_netconfig_ini_handler(void *user, const char *section, const char *name
 ETH_STATUS_t eth_status(void){
     ETH_STATUS_t ret;
     if (netif_is_link_up(&eth0)) {
-        if (IS_LAN_STATIC(wui_eeprom_get_var(NETVAR_LAN_FLAGS).ui8)) {
+        if (IS_LAN_STATIC(wui_get_netvar(NETVAR_LAN_FLAGS).ui8)) {
             if (netif_is_up(&eth0)) {
                 ret = ETH_NETIF_UP;
             } else {

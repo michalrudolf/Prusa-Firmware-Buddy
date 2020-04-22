@@ -10,7 +10,7 @@
 #include "config.h"
 #include "marlin_client.h"
 #ifdef BUDDY_ENABLE_ETHERNET
-    #include "c_wui_api.h"
+    #include "wui_api.h"
 #endif //BUDDY_ENABLE_ETHERNET
 
 extern bool media_is_inserted();
