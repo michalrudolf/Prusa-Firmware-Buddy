@@ -8,7 +8,6 @@
 
 #include "http_client.h"
 #include <stdbool.h>
-#include "wui_api.h"
 #include "stm32f4xx_hal.h"
 #include <string.h>
 #include "wui_custom_api.h"
