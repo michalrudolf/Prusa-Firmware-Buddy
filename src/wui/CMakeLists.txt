@@ -5,7 +5,7 @@ endif()
 add_library(
   WUI
   wui.c
-  wui_api.c
+  wui_REST_api.c
   wui_helper_funcs.c
   http/altcp_proxyconnect.c
   http/fs.c

@@ -6,7 +6,7 @@
  *      Author: joshy <joshymjose[at]gmail.com>
  */
 
-#include "wui_api.h"
+#include "wui_REST_api.h"
 
 #include "wui.h"
 #include "filament.h"

@@ -6,7 +6,7 @@
  *      Author: Migi <michal.rudolf[at]prusa3d.cz>
  */
 
-#include "c_wui_api.h"
+#include "wui_api.h"
 #include "netif_settings.h"
 #include "wui_eeprom_api.h"
 #include "dhcp.h"
