@@ -50,13 +50,13 @@ osPoolDef(httpc_req_mpool, WUI_HTTPC_Q_SZ, httpc_req_t);
 osPoolId httpc_req_mpool_id;
 
 static const httpc_cmd_status_str_t cmd_status_str[] = {
-    { "General", CMD_REJT_GEN },
-    { "Packet size overflow", CMD_REJT_SIZE },                  // The response data size is larger than supported
-    { "Content-Length doesnt match its real value", CMD_REJT_CONT_LEN}, // The respons Conetent-Length doesn't match its real value
-    { "error in the command structure", CMD_REJT_CMD_STRUCT },  // error in the command structure
-    { "error with Command-Id", CMD_REJT_CMD_ID },               // error with Command-Id
-    { "error with Content-Type", CMD_REJT_CONT_TYPE },          // error with Content-Type
-    { "number of gcodes exceeds limit", CMD_REJT_GCODES_LIMI }, // number of gcodes in x-gcode request exceeded
+    { "General", CMD_STATUS_REJT_GEN },
+    { "Packet size overflow", CMD_STATUS_REJT_SIZE },                  // The response data size is larger than supported
+    { "Content-Length doesnt match its real value", CMD_STATUS_REJT_CONT_LEN}, // The respons Conetent-Length doesn't match its real value
+    { "error in the command structure", CMD_STATUS_REJT_CMD_STRUCT },  // error in the command structure
+    { "error with Command-Id", CMD_STATUS_REJT_CMD_ID },               // error with Command-Id
+    { "error with Content-Type", CMD_STATUS_REJT_CONT_TYPE },          // error with Content-Type
+    { "number of gcodes exceeds limit", CMD_STATUS_REJT_GCODES_LIMI }, // number of gcodes in x-gcode request exceeded
 };
 
 static const httpc_con_event_str_t conn_event_str[] = {
@@ -512,7 +512,7 @@ err_t data_received_fun(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t e
     LWIP_UNUSED_ARG(tpcb);
     LWIP_UNUSED_ARG(err);
     uint32_t len_copied = 0;
-    HTTPC_COMMAND_STATUS cmd_status = CMD_UNKNOWN;
+    HTTPC_COMMAND_STATUS cmd_status = CMD_STATUS_UNKNOWN;
     httpc_state_t *req = (httpc_state_t *)arg;
     httpc_result_t result = HTTPC_RESULT_ERR_UNKNOWN;
 
@@ -523,23 +523,23 @@ err_t data_received_fun(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t e
     }
 
     if (header_info.content_type == TYPE_INVALID){
-        cmd_status = CMD_REJT_CONT_TYPE;
+        cmd_status = CMD_STATUS_REJT_CONT_TYPE;
         pbuf_free(p);
     }
 
-    if (cmd_status == CMD_UNKNOWN && (HTTPC_RESPONSE_BUFF_SZ < p->tot_len || HTTPC_RESPONSE_BUFF_SZ < header_info.content_lenght)) {
-        cmd_status = CMD_REJT_SIZE;
+    if (cmd_status == CMD_STATUS_UNKNOWN && (HTTPC_RESPONSE_BUFF_SZ < p->tot_len || HTTPC_RESPONSE_BUFF_SZ < header_info.content_lenght)) {
+        cmd_status = CMD_STATUS_REJT_SIZE;
         result = HTTPC_RESULT_OK;
         pbuf_free(p);
     }
 
-    if (cmd_status == CMD_UNKNOWN && (p->tot_len < header_info.content_lenght || p->tot_len > header_info.content_lenght)){
-        cmd_status = CMD_REJT_CONT_LEN;
+    if (cmd_status == CMD_STATUS_UNKNOWN && (p->tot_len < header_info.content_lenght || p->tot_len > header_info.content_lenght)){
+        cmd_status = CMD_STATUS_REJT_CONT_LEN;
         result = HTTPC_RESULT_ERR_CONTENT_LEN;
         pbuf_free(p);
     }
 
-    if (cmd_status == CMD_UNKNOWN){
+    if (cmd_status == CMD_STATUS_UNKNOWN){
         while (len_copied < p->tot_len) {
 
             char *payload = p->payload;
@@ -561,7 +561,7 @@ err_t data_received_fun(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t e
         pbuf_free(p);
 
         if (len_copied < header_info.content_lenght) {
-            cmd_status = CMD_REJT_CONT_LEN;
+            cmd_status = CMD_STATUS_REJT_CONT_LEN;
             result = HTTPC_RESULT_ERR_CONTENT_LEN;
         } else {
             httpc_resp_buffer[header_info.content_lenght] = 0; // end of line added
@@ -573,12 +573,12 @@ err_t data_received_fun(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t e
     httpc_close(req, result, status, ERR_OK);
     if (status == 200) {
         // send acknowledgment  TODO: only if it is answer to /p/telemetry
-        if (CMD_UNKNOWN != cmd_status) {
+        if (CMD_STATUS_UNKNOWN != cmd_status) {
             httpc_req_t request;
             request.cmd_id = header_info.command_id;
             request.cmd_status = cmd_status;
             request.req_type = REQ_ACK;
-            if (CMD_ACCEPTED != cmd_status) {
+            if (CMD_STATUS_ACCEPTED != cmd_status) {
                 request.connect_event_type = EVENT_REJECTED;
             } else {
                 request.connect_event_type = EVENT_ACCEPTED;
