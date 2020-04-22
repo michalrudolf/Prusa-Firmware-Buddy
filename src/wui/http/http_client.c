@@ -8,7 +8,6 @@
 
 #include "http_client.h"
 #include <stdbool.h>
-#include "wui_api.h"
 #include "stm32f4xx_hal.h"
 #include <string.h>
 #include "eeprom.h"
@@ -16,7 +15,8 @@
 #include "lwip.h"
 #include "marlin_vars.h"
 #include "dbg.h"
-#include "wui_api.h"
+#include "wui_request_parser.h"
+#include "wui_REST_api.h"
 
 #define CLIENT_CONNECT_DELAY      1000 // 1000 = 1 Sec.
 #define CONNECT_SERVER_PORT       8000
@@ -50,12 +50,12 @@ osPoolId httpc_req_mpool_id;
 
 static const httpc_cmd_status_str_t cmd_status_str[] = {
     { "General", CMD_REJT_GEN },
-    { "Packet size overflow", CMD_REJT_SIZE },                  // The response data size is larger than supported
-    { "Content-Length doesnt match its real value", CMD_REJT_CONT_LEN}, // The respons Conetent-Length doesn't match its real value
-    { "error in the command structure", CMD_REJT_CMD_STRUCT },  // error in the command structure
-    { "error with Command-Id", CMD_REJT_CMD_ID },               // error with Command-Id
-    { "error with Content-Type", CMD_REJT_CONT_TYPE },          // error with Content-Type
-    { "number of gcodes exceeds limit", CMD_REJT_GCODES_LIMI }, // number of gcodes in x-gcode request exceeded
+    { "Packet size overflow", CMD_REJT_SIZE },                           // The response data size is larger than supported
+    { "Content-Length doesnt match its real value", CMD_REJT_CONT_LEN }, // The respons Conetent-Length doesn't match its real value
+    { "error in the command structure", CMD_REJT_CMD_STRUCT },           // error in the command structure
+    { "error with Command-Id", CMD_REJT_CMD_ID },                        // error with Command-Id
+    { "error with Content-Type", CMD_REJT_CONT_TYPE },                   // error with Content-Type
+    { "number of gcodes exceeds limit", CMD_REJT_GCODES_LIMI },          // number of gcodes in x-gcode request exceeded
 };
 
 static const httpc_con_event_str_t conn_event_str[] = {
@@ -521,7 +521,7 @@ err_t data_received_fun(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t e
         return ERR_ARG;
     }
 
-    if (header_info.content_type == TYPE_INVALID){
+    if (header_info.content_type == TYPE_INVALID) {
         cmd_status = CMD_REJT_CONT_TYPE;
         pbuf_free(p);
     }
@@ -532,13 +532,13 @@ err_t data_received_fun(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t e
         pbuf_free(p);
     }
 
-    if (cmd_status == CMD_UNKNOWN && (p->tot_len < header_info.content_lenght || p->tot_len > header_info.content_lenght)){
+    if (cmd_status == CMD_UNKNOWN && (p->tot_len < header_info.content_lenght || p->tot_len > header_info.content_lenght)) {
         cmd_status = CMD_REJT_CONT_LEN;
         result = HTTPC_RESULT_ERR_CONTENT_LEN;
         pbuf_free(p);
     }
 
-    if (cmd_status == CMD_UNKNOWN){
+    if (cmd_status == CMD_UNKNOWN) {
         while (len_copied < p->tot_len) {
 
             char *payload = p->payload;
