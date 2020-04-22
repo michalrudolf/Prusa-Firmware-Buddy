@@ -17,6 +17,7 @@ add_library(
   ethernetif.c
   netif_settings.c
   wui_api.c
+  wui_request_parser.c
 )
 
 target_include_directories(

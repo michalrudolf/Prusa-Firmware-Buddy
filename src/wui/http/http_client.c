@@ -17,6 +17,7 @@
 #include "marlin_vars.h"
 #include "dbg.h"
 #include "wui_REST_api.h"
+#include "wui_request_parser.h"
 #include "netif_settings.h"
 
 #define CLIENT_CONNECT_DELAY      1000 // 1000 = 1 Sec.
