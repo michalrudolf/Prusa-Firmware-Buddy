@@ -6,7 +6,6 @@
 
 #include "lwip/tcp.h"
 #include "wui_err.h"
-#include "wui_helper_funcs.h"
 
 #include <stdbool.h>
 
