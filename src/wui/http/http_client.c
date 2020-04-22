@@ -50,12 +50,12 @@ osPoolId httpc_req_mpool_id;
 
 static const httpc_cmd_status_str_t cmd_status_str[] = {
     { "General", CMD_REJT_GEN },
-    { "Packet size overflow", CMD_REJT_SIZE },                  // The response data size is larger than supported
-    { "Content-Length doesnt match its real value", CMD_REJT_CONT_LEN}, // The respons Conetent-Length doesn't match its real value
-    { "error in the command structure", CMD_REJT_CMD_STRUCT },  // error in the command structure
-    { "error with Command-Id", CMD_REJT_CMD_ID },               // error with Command-Id
-    { "error with Content-Type", CMD_REJT_CONT_TYPE },          // error with Content-Type
-    { "number of gcodes exceeds limit", CMD_REJT_GCODES_LIMI }, // number of gcodes in x-gcode request exceeded
+    { "Packet size overflow", CMD_REJT_SIZE },                           // The response data size is larger than supported
+    { "Content-Length doesnt match its real value", CMD_REJT_CONT_LEN }, // The respons Conetent-Length doesn't match its real value
+    { "error in the command structure", CMD_REJT_CMD_STRUCT },           // error in the command structure
+    { "error with Command-Id", CMD_REJT_CMD_ID },                        // error with Command-Id
+    { "error with Content-Type", CMD_REJT_CONT_TYPE },                   // error with Content-Type
+    { "number of gcodes exceeds limit", CMD_REJT_GCODES_LIMI },          // number of gcodes in x-gcode request exceeded
 };
 
 static const httpc_con_event_str_t conn_event_str[] = {
@@ -66,10 +66,6 @@ static const httpc_con_event_str_t conn_event_str[] = {
     { "INFO", EVENT_INFO },
 };
 
-/**
- * @ingroup httpc
- * HTTP client result codes
- */
 typedef enum ehttpc_result {
     /** File successfully received */
     HTTPC_RESULT_OK = 0,
@@ -315,6 +311,8 @@ http_wait_headers(struct pbuf *p, u32_t *content_length, u16_t *total_header_len
                         header_info.content_type = TYPE_JSON;
                     } else if (0 == strncmp(content_type_str, type_xgcode_str, strlen(type_xgcode_str))) {
                         header_info.content_type = TYPE_GCODE;
+                    } else {
+                        return ERR_VAL; // quit the connection if content type is un-supported
                     }
                 }
             }
@@ -393,7 +391,10 @@ httpc_tcp_recv(void *arg, struct altcp_pcb *pcb, struct pbuf *p, err_t r) {
             u16_t status_str_off;
             err_t err = http_parse_response_status(req->rx_hdrs, &req->rx_http_version, &req->rx_status, &status_str_off);
             if (err == ERR_OK) {
-                /* don't care status string */
+                /* continue only if allowed  status codes */
+                if (200 != req->rx_status) {
+                    return httpc_close(req, HTTPC_RESULT_LOCAL_ABORT, req->rx_status, ERR_OK);
+                }
                 req->parse_state = HTTPC_PARSE_WAIT_HEADERS;
             }
         }
@@ -521,7 +522,7 @@ err_t data_received_fun(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t e
         return ERR_ARG;
     }
 
-    if (header_info.content_type == TYPE_INVALID){
+    if (header_info.content_type == TYPE_INVALID) {
         cmd_status = CMD_REJT_CONT_TYPE;
         pbuf_free(p);
     }
@@ -532,13 +533,13 @@ err_t data_received_fun(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t e
         pbuf_free(p);
     }
 
-    if (cmd_status == CMD_UNKNOWN && (p->tot_len < header_info.content_lenght || p->tot_len > header_info.content_lenght)){
+    if (cmd_status == CMD_UNKNOWN && (p->tot_len < header_info.content_lenght || p->tot_len > header_info.content_lenght)) {
         cmd_status = CMD_REJT_CONT_LEN;
         result = HTTPC_RESULT_ERR_CONTENT_LEN;
         pbuf_free(p);
     }
 
-    if (cmd_status == CMD_UNKNOWN){
+    if (cmd_status == CMD_UNKNOWN) {
         while (len_copied < p->tot_len) {
 
             char *payload = p->payload;
