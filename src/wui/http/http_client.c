@@ -8,7 +8,6 @@
 
 #include "http_client.h"
 #include <stdbool.h>
-#include "wui_api.h"
 #include "stm32f4xx_hal.h"
 #include <string.h>
 #include "eeprom.h"
@@ -16,7 +15,8 @@
 #include "lwip.h"
 #include "marlin_vars.h"
 #include "dbg.h"
-#include "wui_api.h"
+#include "wui_request_parser.h"
+#include "wui_REST_api.h"
 
 #define CLIENT_CONNECT_DELAY      1000 // 1000 = 1 Sec.
 #define CONNECT_SERVER_PORT       8000

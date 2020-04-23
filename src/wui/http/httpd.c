@@ -115,9 +115,10 @@
 #include "stdbool.h"
 
 /*******   Customization ***************************************/
-#include "wui_api.h"
+#include "wui_REST_api.h"
 #include "marlin_client.h"
 #include "wui_helper_funcs.h"
+#include "wui_request_parser.h"
 #include "wui.h"
 #include "dbg.h"
 #define WUI_API_ROOT_STR_LEN 5
@@ -442,7 +443,7 @@ void httpd_post_finished(void *connection, char *response_uri,
         } else {
             if ((post_status.bytes_copied == post_status.post_data_len) && (post_status.bytes_copied < POST_REQUEST_BUFFSIZE)) {
                 request_buf[post_status.bytes_copied] = 0; // end of line placed
-                http_json_parser(request_buf, strlen(request_buf));
+                httpd_json_parser(request_buf, strlen(request_buf));
 
                 strlcpy(response_uri, "POST200", response_uri_len);
                 request_buf[0] = 0;
