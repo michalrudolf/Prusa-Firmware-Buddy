@@ -162,6 +162,7 @@ void httpd_json_parser(char *json, uint32_t len) {
 
     for (int i = 0; i < ret; i++) {
         wui_cmd_t request;
+        request.set_flg = 0;
 #if HTTP_DUBAI_HACK
         if (json_cmp(json, &t[i], project_firmware_name) == 0) {
 #else
@@ -176,23 +177,26 @@ void httpd_json_parser(char *json, uint32_t len) {
             strlcpy(request_str, json + t[i + 1].start, t[i + 1].end - t[i + 1].start + 1);
             ip4_addr_t tmp_addr;
             if (ip4addr_aton(request_str, &tmp_addr)) {
-                snprintf(request.arg, MAX_REQ_MARLIN_SIZE, "!cip %lu", tmp_addr.addr);
+                snprintf(request.arg, MAX_REQ_MARLIN_SIZE, "%lu", tmp_addr.addr);
                 request.high_lvl_cmd = CMD_SET;
+                request.set_flg |= SET_CONNECT_IP4;
                 request.lvl = HIGH_LVL_CMD;
                 send_request_to_wui(&request);
             }
             i++;
         } else if (json_cmp(json, &t[i], "connect_key") == 0) {
             strlcpy(request_str, json + t[i + 1].start, t[i + 1].end - t[i + 1].start + 1);
-            snprintf(request.arg, MAX_REQ_MARLIN_SIZE, "!ck %s", request_str);
+            strlcpy(request.arg, request_str, MAX_REQ_MARLIN_SIZE);
             request.high_lvl_cmd = CMD_SET;
+            request.set_flg |= SET_CONNECT_TOKEN;
             request.lvl = HIGH_LVL_CMD;
             send_request_to_wui(&request);
             i++;
         } else if (json_cmp(json, &t[i], "connect_name") == 0) {
             strlcpy(request_str, json + t[i + 1].start, t[i + 1].end - t[i + 1].start + 1);
-            snprintf(request.arg, MAX_REQ_MARLIN_SIZE, "!cn %s", request_str);
+            strlcpy(request.arg, request_str, MAX_REQ_MARLIN_SIZE);
             request.high_lvl_cmd = CMD_SET;
+            request.set_flg |= SET_HOSTNAME;
             request.lvl = HIGH_LVL_CMD;
             send_request_to_wui(&request);
             i++;

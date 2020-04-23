@@ -60,22 +60,22 @@ static int process_wui_request(wui_cmd_t *request) {
 
     if (request->lvl == HIGH_LVL_CMD){
         if (request->high_lvl_cmd == CMD_SET){
-            if (strncmp(request->arg, "!cip ", 5) == 0) {
+            if (request->set_flg & SET_CONNECT_IP4) {
                 uint32_t ip;
-                if (sscanf(request->arg + 5, "%lu", &ip)) {
+                if (sscanf(request->arg, "%lu", &ip)) {
                     wui_set_netvar(NETVAR_CONNECT_IP4, variant8_ui32(ip));
                 }
-            } else if (strncmp(request->arg, "!ck ", 4) == 0) {
-                variant8_t token = variant8_pchar(request->arg + 4, 0, 0);
+            } else if (request->set_flg & SET_CONNECT_TOKEN) {
+                variant8_t token = variant8_pchar(request->arg, 0, 0);
                 wui_set_netvar(NETVAR_CONNECT_TOKEN, token);
                 //variant8_done() is not called because variant_pchar with init flag 0 doesnt hold its memory
-            } else if (strncmp(request->arg, "!cn ", 4) == 0) {
-                variant8_t hostname = variant8_pchar(request->arg + 4, 0, 0);
+            } else if (request->set_flg & SET_HOSTNAME) {
+                variant8_t hostname = variant8_pchar(request->arg, 0, 0);
                 wui_set_netvar(NETVAR_HOSTNAME, hostname);
                 //variant8_done() is not called because variant_pchar with init flag 0 doesnt hold its memory
             }
         }
-    } else {
+    } else if (request->lvl == LOW_LVL_CMD) {
         _dbg("sending command: %s to marlin", request);
         marlin_gcode(request->arg);
     }

@@ -43,10 +43,28 @@ typedef enum {
     LOW_LVL_CMD,
 } CMD_LVL;
 
+typedef enum {
+    SET_CONNECT_IP4,
+    SET_CONNECT_TOKEN,
+    SET_CONNECT_PORT,
+    SET_LAN_IP4_ADDR,
+    SET_LAN_IP4_MSK,
+    SET_LAN_IP4_GW,
+    SET_LAN_NETIF_UP,
+    SET_LAN_NETIF_DOWN,
+    SET_LAN_DHCP,
+    SET_LAN_STATIC,
+    SET_DNS1_IP4,
+    SET_DNS2_IP4,
+    SET_HOSTNAME,
+} CONNECT_SET_OPT;
+
 typedef struct {
     CMD_LVL lvl;
     HTTPC_HIGH_LVL_CMD high_lvl_cmd;
+    uint32_t set_flg;
     char arg[100];
+    // TODO: other possible arg's data types
 } wui_cmd_t;
 
 
