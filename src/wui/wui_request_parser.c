@@ -78,7 +78,8 @@ static uint8_t parse_high_cmd_args(wui_cmd_t *command, const char *json, jsmntok
     }
     (*i)++;
     switch (command->high_lvl_cmd) {
-        case CMD_SEND_INFO:
+        // example case - have string as a arg -> name of the gcode file
+        case CMD_START_PRINT:
             strlcpy(command->arg, json + t[*i].start, (t[*i].end - t[*i].start + 1));
             (*i)++;
             break;    
