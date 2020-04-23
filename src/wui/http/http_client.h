@@ -44,7 +44,7 @@ typedef enum {
     CMD_REJT_CMD_ID,      // error with Command-Id
     CMD_REJT_CONT_TYPE,   // error with Content-Type
     CMD_REJT_GCODES_LIMI, // number of gcodes in x-gcode request exceeded
-    CMD_UNKNOWN,
+    CMD_STATUS_UNKNOWN,
     CMD_ACCEPTED,
 } HTTPC_COMMAND_STATUS;
 

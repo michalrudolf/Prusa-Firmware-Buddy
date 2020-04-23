@@ -519,7 +519,7 @@ err_t data_received_fun(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t e
     LWIP_UNUSED_ARG(err);
     uint32_t len_copied = 0;
     bool continue_recv_fun = true;
-    HTTPC_COMMAND_STATUS cmd_status = CMD_UNKNOWN;
+    HTTPC_COMMAND_STATUS cmd_status = CMD_STATUS_UNKNOWN;
     httpc_state_t *req = (httpc_state_t *)arg;
     httpc_result_t result = HTTPC_RESULT_ERR_UNKNOWN;
 
@@ -541,7 +541,7 @@ err_t data_received_fun(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t e
         pbuf_free(p);
     }
 
-    if (cmd_status == CMD_UNKNOWN && (p->tot_len < header_info.content_lenght || p->tot_len > header_info.content_lenght)) {
+    if (cmd_status == CMD_STATUS_UNKNOWN && (p->tot_len < header_info.content_lenght || p->tot_len > header_info.content_lenght)) {
         cmd_status = CMD_REJT_CONT_LEN;
         result = HTTPC_RESULT_ERR_CONTENT_LEN;
         continue_recv_fun = false;
@@ -581,7 +581,7 @@ err_t data_received_fun(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t e
 
     httpc_close(req, result, req->rx_status, ERR_OK);
 
-    if (CMD_UNKNOWN != cmd_status) {
+    if (CMD_STATUS_UNKNOWN != cmd_status) {
         httpc_req_t request;
         request.cmd_id = header_info.command_id;
         request.cmd_status = cmd_status;
