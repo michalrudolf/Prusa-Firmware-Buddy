@@ -541,6 +541,13 @@ err_t data_received_fun(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t e
         pbuf_free(p);
     }
 
+    if (cmd_status == CMD_UNKNOWN && (p->tot_len < header_info.content_lenght || p->tot_len > header_info.content_lenght)) {
+        cmd_status = CMD_REJT_CONT_LEN;
+        result = HTTPC_RESULT_ERR_CONTENT_LEN;
+        continue_recv_fun = false;
+        pbuf_free(p);
+    }
+
     if (continue_recv_fun) {
         while (len_copied < p->tot_len) {
 
