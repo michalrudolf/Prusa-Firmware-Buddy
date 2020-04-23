@@ -17,6 +17,7 @@
 #include "dbg.h"
 #include "wui_request_parser.h"
 #include "wui_REST_api.h"
+#include "wui_api.h"
 
 #define CLIENT_CONNECT_DELAY      1000 // 1000 = 1 Sec.
 #define CONNECT_SERVER_PORT       8000
@@ -585,11 +586,20 @@ err_t data_received_fun(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t e
         httpc_req_t request;
         request.cmd_id = header_info.command_id;
         request.cmd_status = cmd_status;
-        request.req_type = REQ_ACK;
-        if (CMD_ACCEPTED != cmd_status) {
-            request.connect_event_type = EVENT_REJECTED;
+        
+        if (cmd_status == CMD_INFO_REQ){
+            request.req_type = REQ_EVENT;
+            request.connect_event_type = EVENT_INFO;
+            printer_info_t printer_info;
+            get_printer_info(&printer_info);
+            // TODO: Attach printer_info structure
         } else {
-            request.connect_event_type = EVENT_ACCEPTED;
+            request.req_type = REQ_ACK;
+            if (CMD_ACCEPTED != cmd_status) {
+                request.connect_event_type = EVENT_REJECTED;
+            } else {
+                request.connect_event_type = EVENT_ACCEPTED;
+            }
         }
 
         send_request_to_httpc(request);

@@ -4,6 +4,7 @@
 #include "jsmn.h"
 #include "dbg.h"
 
+
 #define HTTP_DUBAI_HACK 0
 
 #if HTTP_DUBAI_HACK
@@ -12,7 +13,7 @@
 #define CMD_LIMIT 10 // number of commands accepted in low level command response
 
 #define MAX_ACK_SIZE 16
-uint32_t httpc_json_parser(char *json, uint32_t len);
+HTTPC_COMMAND_STATUS httpc_json_parser(char *json, uint32_t len);
 
 static int json_cmp(const char *json, jsmntok_t *tok, const char *s) {
     if (tok->type == JSMN_STRING && (int)strlen(s) == tok->end - tok->start && strncmp(json + tok->start, s, tok->end - tok->start) == 0) {
@@ -22,12 +23,7 @@ static int json_cmp(const char *json, jsmntok_t *tok, const char *s) {
 }
 
 static HTTPC_COMMAND_STATUS parse_high_level_cmd(char *json, uint32_t len) {
-    uint32_t ret_code = httpc_json_parser(json, len);
-    if (ret_code) {
-        return CMD_REJT_CMD_STRUCT;
-    } else {
-        return CMD_ACCEPTED;
-    }
+    return httpc_json_parser(json, len);
 }
 
 static HTTPC_COMMAND_STATUS parse_low_level_cmd(const char *request, httpc_header_info *h_info_ptr) {
@@ -73,22 +69,20 @@ static HTTPC_COMMAND_STATUS parse_low_level_cmd(const char *request, httpc_heade
 }
 
 static uint8_t parse_high_cmd_args(wui_cmd_t *command, const char *json, jsmntok_t *t, int *i){
+    uint8_t ret_code = 0;
     if (json_cmp(json, &t[*i], "args") != 0 || t[*i + 1].type != JSMN_ARRAY || t[*i].size > HIGH_CMD_MAX_ARGS_CNT){
         return 1;
     }
     (*i)++;
     switch (command->high_lvl_cmd) {
-        // example case - have string as a arg -> name of the gcode file
-        case CMD_START_PRINT:
-            strlcpy(command->arg, json + t[*i].start, (t[*i].end - t[*i].start + 1));
-            (*i)++;
+        case CMD_SEND_INFO:
+            ret_code = 1;
             break;    
         // TODO: other high level commands
-
         default:
         break;
     }
-    return 0;
+    return ret_code;
 }
 
 HTTPC_COMMAND_STATUS parse_http_reply(char *reply, uint32_t reply_len, httpc_header_info *h_info_ptr) {
@@ -106,8 +100,7 @@ HTTPC_COMMAND_STATUS parse_http_reply(char *reply, uint32_t reply_len, httpc_hea
     return cmd_status;
 }
 
-uint32_t httpc_json_parser(char *json, uint32_t len) {
-    uint32_t ret_code = 1; // success is 0
+HTTPC_COMMAND_STATUS httpc_json_parser(char *json, uint32_t len) {
     int ret;
     jsmn_parser parser;
     jsmntok_t t[128]; // Just a raw value, we do not expect more that 128 tokens
@@ -118,10 +111,11 @@ uint32_t httpc_json_parser(char *json, uint32_t len) {
 
     if (ret < 1 || t[0].type != JSMN_OBJECT) {
         // Fail to parse JSON or top element is not an object
-        return 1;
+        return CMD_REJT_CMD_STRUCT;
     }
 
     wui_cmd_t command;
+    HTTPC_COMMAND_STATUS ret_status = CMD_ACCEPTED;
 
     for (int i = 0; i < ret; i++) {
         if (json_cmp(json, &t[i], "command") == 0) {
@@ -130,27 +124,26 @@ uint32_t httpc_json_parser(char *json, uint32_t len) {
             
             if(strcmp(request, "SEND_INFO") == 0){
                 command.high_lvl_cmd = CMD_SEND_INFO;
+                ret_status = CMD_INFO_REQ;
             // TODO: other high level commands
             } else {
                 command.high_lvl_cmd = CMD_UNKNOWN;
             }
 
-            if(parse_high_cmd_args(&command, json, t, &i)){
-                return 1;
+            if (parse_high_cmd_args(&command, json, t, &i)){
+                ret_status = CMD_REJT_CMD_STRUCT;
             }
         }
     }
     
     send_request_to_wui(&command);
-    ret_code = 0;
-    return ret_code;
+    return ret_status;
 }
 
 void httpd_json_parser(char *json, uint32_t len) {
     int ret;
     jsmn_parser parser;
     jsmntok_t t[128]; // Just a raw value, we do not expect more that 128 tokens
-    char request_str[MAX_REQ_MARLIN_SIZE];
 
     jsmn_init(&parser);
     ret = jsmn_parse(&parser, json, len, t, sizeof(t) / sizeof(jsmntok_t));
@@ -162,7 +155,6 @@ void httpd_json_parser(char *json, uint32_t len) {
 
     for (int i = 0; i < ret; i++) {
         wui_cmd_t request;
-        request.var_msk = 0;
 #if HTTP_DUBAI_HACK
         if (json_cmp(json, &t[i], project_firmware_name) == 0) {
 #else
@@ -173,33 +165,6 @@ void httpd_json_parser(char *json, uint32_t len) {
             i++;
             _dbg("command received: %s", request.arg);
             send_request_to_wui(&request);
-        } else if (json_cmp(json, &t[i], "connect_ip") == 0) {
-            strlcpy(request_str, json + t[i + 1].start, t[i + 1].end - t[i + 1].start + 1);
-            ip4_addr_t tmp_addr;
-            if (ip4addr_aton(request_str, &tmp_addr)) {
-                snprintf(request.arg, MAX_REQ_MARLIN_SIZE, "%lu", tmp_addr.addr);
-                request.high_lvl_cmd = CMD_SET;
-                request.var_msk |= WUI_VAR_MSK(VAR_CONNECT_IP4);
-                request.lvl = HIGH_LVL_CMD;
-                send_request_to_wui(&request);
-            }
-            i++;
-        } else if (json_cmp(json, &t[i], "connect_key") == 0) {
-            strlcpy(request_str, json + t[i + 1].start, t[i + 1].end - t[i + 1].start + 1);
-            strlcpy(request.arg, request_str, MAX_REQ_MARLIN_SIZE);
-            request.high_lvl_cmd = CMD_SET;
-            request.var_msk |= WUI_VAR_MSK(VAR_CONNECT_TOKEN);
-            request.lvl = HIGH_LVL_CMD;
-            send_request_to_wui(&request);
-            i++;
-        } else if (json_cmp(json, &t[i], "connect_name") == 0) {
-            strlcpy(request_str, json + t[i + 1].start, t[i + 1].end - t[i + 1].start + 1);
-            strlcpy(request.arg, request_str, MAX_REQ_MARLIN_SIZE);
-            request.high_lvl_cmd = CMD_SET;
-            request.var_msk |= WUI_VAR_MSK(VAR_HOSTNAME);
-            request.lvl = HIGH_LVL_CMD;
-            send_request_to_wui(&request);
-            i++;
         }
     }
 }

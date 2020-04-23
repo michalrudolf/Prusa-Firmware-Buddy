@@ -57,22 +57,7 @@ static void update_wui_vars(void) {
 static int process_wui_request(wui_cmd_t *request) {
 
     if (request->lvl == HIGH_LVL_CMD){
-        if (request->high_lvl_cmd == CMD_SET){
-            if (request->var_msk & WUI_VAR_MSK(VAR_CONNECT_IP4)) {
-                uint32_t ip;
-                if (sscanf(request->arg, "%lu", &ip)) {
-                    eeprom_set_var(EEVAR_CONNECT_IP4, variant8_ui32(ip));
-                }
-            } else if (request->var_msk & WUI_VAR_MSK(VAR_CONNECT_TOKEN)) {
-                variant8_t token = variant8_pchar(request->arg, 0, 0);
-                eeprom_set_var(EEVAR_CONNECT_TOKEN, token);
-                //variant8_done() is not called because variant_pchar with init flag 0 doesnt hold its memory
-            } else if (request->var_msk & WUI_VAR_MSK(VAR_HOSTNAME)) {
-                variant8_t hostname = variant8_pchar(request->arg, 0, 0);
-                eeprom_set_var(EEVAR_LAN_HOSTNAME, hostname);
-                //variant8_done() is not called because variant_pchar with init flag 0 doesnt hold its memory
-            }
-        }
+
     } else if (request->lvl == LOW_LVL_CMD) {
         _dbg("sending command: %s to marlin", request);
         marlin_gcode(request->arg);
