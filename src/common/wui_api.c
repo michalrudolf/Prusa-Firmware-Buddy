@@ -73,7 +73,7 @@ uint32_t save_eth_params(ETH_Config_t *config_t) {
         // if lan type is set to STATIC
         if (IS_LAN_STATIC(config_t->lan_flag) && (config_t->set_flag & ETHVAR_STATIC_LAN_ADDRS)) {
             uint8_t lan_flags = eeprom_get_var(EEVAR_LAN_FLAG).ui8;
-            CHANGE_LAN_TO_DHCP(lan_flags);
+            CHANGE_LAN_TO_STATIC(lan_flags);
             eeprom_set_var(EEVAR_LAN_FLAG, variant8_ui8(lan_flags));
             eeprom_set_var(EEVAR_LAN_IP4_ADDR,
                 variant8_ui32(config_t->lan_ip4_addr.addr));
