@@ -23,7 +23,44 @@ static int json_cmp(const char *json, jsmntok_t *tok, const char *s) {
 }
 
 static HTTPC_COMMAND_STATUS parse_high_level_cmd(char *json, uint32_t len) {
-    return httpc_json_parser(json, len);
+    int ret;
+    jsmn_parser parser;
+    jsmntok_t t[128]; // Just a raw value, we do not expect more that 128 tokens
+    char request[MAX_REQ_MARLIN_SIZE];
+
+    jsmn_init(&parser);
+    ret = jsmn_parse(&parser, json, len, t, sizeof(t) / sizeof(jsmntok_t));
+
+    if (ret < 1 || t[0].type != JSMN_OBJECT) {
+        // Fail to parse JSON or top element is not an object
+        return CMD_REJT_CMD_STRUCT;
+    }
+
+    wui_cmd_t command;
+    HTTPC_COMMAND_STATUS ret_status = CMD_ACCEPTED;
+
+    for (int i = 0; i < ret; i++) {
+        if (json_cmp(json, &t[i], "command") == 0) {
+            strlcpy(request, json + t[i + 1].start, (t[i + 1].end - t[i + 1].start + 1));
+            i++;
+            
+            if(strcmp(request, "SEND_INFO") == 0) {
+                command.high_lvl_cmd = CMD_SEND_INFO;
+                ret_status = CMD_INFO_REQ;  // REFACTOR in the future
+            // TODO: other high level commands
+            } else {
+                command.high_lvl_cmd = CMD_UNKNOWN;
+            }
+        }
+    }
+    
+    if(command.high_lvl_cmd != CMD_UNKNOWN && ret_status != CMD_INFO_REQ){
+        if(send_request_to_wui(&command)){
+            return CMD_REJT_NO_SPACE;
+        }
+    }
+
+    return ret_status;
 }
 
 static HTTPC_COMMAND_STATUS parse_low_level_cmd(const char *request, httpc_header_info *h_info_ptr) {
@@ -68,23 +105,6 @@ static HTTPC_COMMAND_STATUS parse_low_level_cmd(const char *request, httpc_heade
     return CMD_ACCEPTED;
 }
 
-static uint8_t parse_high_cmd_args(wui_cmd_t *command, const char *json, jsmntok_t *t, int *i){
-    HTTPC_COMMAND_STATUS ret_status = CMD_STATUS_UNKNOWN;
-    if (json_cmp(json, &t[*i], "args") != 0 || t[*i + 1].type != JSMN_ARRAY || t[*i].size > HIGH_CMD_MAX_ARGS_CNT){
-        return CMD_REJT_CMD_STRUCT;
-    }
-    (*i)++;
-    switch (command->high_lvl_cmd) {
-        case CMD_SEND_INFO:
-            return CMD_INFO_REQ;
-            break;    
-        // TODO: other high level commands
-        default:
-        break;
-    }
-    return ret_status;
-}
-
 HTTPC_COMMAND_STATUS parse_http_reply(char *reply, uint32_t reply_len, httpc_header_info *h_info_ptr) {
     HTTPC_COMMAND_STATUS cmd_status = CMD_STATUS_UNKNOWN;
     if (0 == h_info_ptr->command_id) {
@@ -101,42 +121,7 @@ HTTPC_COMMAND_STATUS parse_http_reply(char *reply, uint32_t reply_len, httpc_hea
 }
 
 HTTPC_COMMAND_STATUS httpc_json_parser(char *json, uint32_t len) {
-    int ret;
-    jsmn_parser parser;
-    jsmntok_t t[128]; // Just a raw value, we do not expect more that 128 tokens
-    char request[MAX_REQ_MARLIN_SIZE];
-
-    jsmn_init(&parser);
-    ret = jsmn_parse(&parser, json, len, t, sizeof(t) / sizeof(jsmntok_t));
-
-    if (ret < 1 || t[0].type != JSMN_OBJECT) {
-        // Fail to parse JSON or top element is not an object
-        return CMD_REJT_CMD_STRUCT;
-    }
-
-    wui_cmd_t command;
-    HTTPC_COMMAND_STATUS ret_status = CMD_ACCEPTED;
-
-    for (int i = 0; i < ret; i++) {
-        if (json_cmp(json, &t[i], "command") == 0) {
-            strlcpy(request, json + t[i + 1].start, (t[i + 1].end - t[i + 1].start + 1));
-            i++;
-            
-            if(strcmp(request, "SEND_INFO") == 0){
-                command.high_lvl_cmd = CMD_SEND_INFO;
-            // TODO: other high level commands
-            } else {
-                command.high_lvl_cmd = CMD_UNKNOWN;
-            }
-
-            ret_status = parse_high_cmd_args(&command, json, t, &i);
-        }
-    }
     
-    if(ret_status == CMD_INFO_REQ || ret_status == CMD_ACCEPTED){
-        send_request_to_wui(&command);
-    }
-    return ret_status;
 }
 
 void httpd_json_parser(char *json, uint32_t len) {

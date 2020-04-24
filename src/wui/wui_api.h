@@ -20,15 +20,15 @@ extern "C" {
 #define SER_NUM_STR_LEN     16
 #define UUID_STR_LEN        32
 #define PRI_STATE_STR_LEN   10
-typedef struct {
 
-    uint8_t printer_type;
-    uint8_t printer_version;
-    char firmware_version[FW_VER_STR_LEN];
-    char mac_address[MAC_ADDR_STR_LEN];
-    char serial_number[SER_NUM_STR_LEN];
-    char mcu_uuid[UUID_STR_LEN];
-    char printer_state[PRI_STATE_STR_LEN];
+typedef struct {
+    uint8_t printer_type;                   // Printer type (defined in CMakeLists.txt)
+    uint8_t printer_version;                // Printer varsion (Stored in FLASH)
+    char firmware_version[FW_VER_STR_LEN];  // Full project's version (4.0.3-BETA+1035.PR111.B4)
+    char mac_address[MAC_ADDR_STR_LEN];     // MAC address string "MM:MM:MM:SS:SS:SS"
+    char serial_number[SER_NUM_STR_LEN];    // serial number without first four characters "CZPX" (total 15 chars, zero terminated)
+    char mcu_uuid[UUID_STR_LEN];            // Unique identifier (96bits) into string format "%08lx-%08lx-%08lx"
+    char printer_state[PRI_STATE_STR_LEN];  // state of the printer, have to be set in wui
 } printer_info_t;
 
 typedef struct {
