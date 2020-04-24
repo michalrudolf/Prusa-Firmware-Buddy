@@ -5,7 +5,7 @@
 extern osMessageQId tcp_wui_mpool_id;
 extern osSemaphoreId tcp_wui_semaphore_id;
 
-uint8_t send_request_to_wui(wui_cmd_t * req_ptr) {
+uint32_t send_request_to_wui(wui_cmd_t * req_ptr) {
 
     osSemaphoreWait(tcp_wui_semaphore_id, osWaitForever);
     if (0 != tcp_wui_queue_id) // queue valid

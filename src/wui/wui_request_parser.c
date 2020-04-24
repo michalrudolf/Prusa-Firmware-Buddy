@@ -13,7 +13,6 @@
 #define CMD_LIMIT 10 // number of commands accepted in low level command response
 
 #define MAX_ACK_SIZE 16
-HTTPC_COMMAND_STATUS httpc_json_parser(char *json, uint32_t len);
 
 static int json_cmp(const char *json, jsmntok_t *tok, const char *s) {
     if (tok->type == JSMN_STRING && (int)strlen(s) == tok->end - tok->start && strncmp(json + tok->start, s, tok->end - tok->start) == 0) {
@@ -118,10 +117,6 @@ HTTPC_COMMAND_STATUS parse_http_reply(char *reply, uint32_t reply_len, httpc_hea
         cmd_status = CMD_REJT_CONT_TYPE;
     }
     return cmd_status;
-}
-
-HTTPC_COMMAND_STATUS httpc_json_parser(char *json, uint32_t len) {
-    
 }
 
 void httpd_json_parser(char *json, uint32_t len) {
