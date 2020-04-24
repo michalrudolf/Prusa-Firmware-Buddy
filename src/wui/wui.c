@@ -9,6 +9,7 @@
 #include "wui.h"
 #include "wui_vars.h"
 #include "marlin_client.h"
+#include "wui_api.h"
 #include "lwip.h"
 #include "ethernetif.h"
 #include "http_client.h"
@@ -56,7 +57,7 @@ static void update_wui_vars(void) {
 
 static int process_wui_request(wui_cmd_t *request) {
 
-    if (request->lvl == HIGH_LVL_CMD){
+    if (request->lvl == HIGH_LVL_CMD) {
 
     } else if (request->lvl == LOW_LVL_CMD) {
         _dbg("sending command: %s to marlin", request);
@@ -99,6 +100,10 @@ void StartWebServerTask(void const *argument) {
     // force update variables when starts
     marlin_client_set_event_notify(MARLIN_EVT_MSK_DEF - MARLIN_EVT_MSK_FSM);
     marlin_client_set_change_notify(MARLIN_VAR_MSK_DEF | MARLIN_VAR_MSK_WUI);
+    // get settings from ini file
+    ETH_Config_t eth_params_t;
+    load_ini_params(&eth_params_t);
+    save_eth_params(&eth_params_t);
     // LwIP related initalizations
     MX_LWIP_Init();
     http_server_init();

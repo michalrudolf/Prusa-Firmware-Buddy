@@ -2,8 +2,8 @@ if(NOT TARGET WUI_Config)
   message(FATAL_ERROR "Target WUI_Config does not exist.")
 endif()
 
-add_library(
-  WUI
+add_library(WUI INTERFACE)
+target_sources(WUI INTERFACE
   wui.c
   wui_REST_api.c
   wui_helper_funcs.c
@@ -20,7 +20,7 @@ add_library(
 
 target_include_directories(
   WUI
-  PUBLIC
+  INTERFACE
     ${CMAKE_CURRENT_LIST_DIR}
     http
     resources
@@ -28,8 +28,8 @@ target_include_directories(
 
 target_link_libraries(
   WUI
-  PRIVATE LwIP
-          jsmn::jsmn
-          Marlin
-          WUI_Config
+  INTERFACE LwIP
+            jsmn::jsmn
+            Marlin
+            WUI_Config
   )
