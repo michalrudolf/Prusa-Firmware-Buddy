@@ -55,24 +55,13 @@ static void update_wui_vars(void) {
     osMutexRelease(wui_thread_mutex_id);
 }
 
-static int process_wui_request(char *request) {
+static int process_wui_request(wui_cmd_t *request) {
 
-    if (strncmp(request, "!cip ", 5) == 0) {
-        uint32_t ip;
-        if (sscanf(request + 5, "%lu", &ip)) {
-            eeprom_set_var(EEVAR_CONNECT_IP4, variant8_ui32(ip));
-        }
-    } else if (strncmp(request, "!ck ", 4) == 0) {
-        variant8_t token = variant8_pchar(request + 4, 0, 0);
-        eeprom_set_var(EEVAR_CONNECT_TOKEN, token);
-        //variant8_done() is not called because variant_pchar with init flag 0 doesnt hold its memory
-    } else if (strncmp(request, "!cn ", 4) == 0) {
-        variant8_t hostname = variant8_pchar(request + 4, 0, 0);
-        eeprom_set_var(EEVAR_LAN_HOSTNAME, hostname);
-        //variant8_done() is not called because variant_pchar with init flag 0 doesnt hold its memory
-    } else {
+    if (request->lvl == HIGH_LVL_CMD) {
+
+    } else if (request->lvl == LOW_LVL_CMD) {
         _dbg("sending command: %s to marlin", request);
-        marlin_gcode(request);
+        marlin_gcode(request->arg);
     }
     return 1;
 }
@@ -86,7 +75,7 @@ static void wui_queue_cycle() {
         rptr = wui_event.value.p;
         if (NULL != wui_event.value.p) {
             _dbg("command in wui queue");
-            process_wui_request(rptr->gcode_cmd);
+            process_wui_request(rptr);
         }
         osStatus status = osPoolFree(tcp_wui_mpool_id, rptr); // free memory allocated for message
         if (osOK != status) {

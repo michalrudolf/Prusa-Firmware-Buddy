@@ -17,6 +17,7 @@
 #include "dbg.h"
 #include "wui_request_parser.h"
 #include "wui_REST_api.h"
+#include "wui_api.h"
 
 #define CLIENT_CONNECT_DELAY      1000 // 1000 = 1 Sec.
 #define CONNECT_SERVER_PORT       8000
@@ -56,6 +57,7 @@ static const httpc_cmd_status_str_t cmd_status_str[] = {
     { "error with Command-Id", CMD_REJT_CMD_ID },                        // error with Command-Id
     { "error with Content-Type", CMD_REJT_CONT_TYPE },                   // error with Content-Type
     { "number of gcodes exceeds limit", CMD_REJT_GCODES_LIMI },          // number of gcodes in x-gcode request exceeded
+    { "not enough space in MessageQ for request", CMD_REJT_NO_SPACE },   // not enough space in osPool for request transfer to wui.c
 };
 
 static const httpc_con_event_str_t conn_event_str[] = {
@@ -519,7 +521,7 @@ err_t data_received_fun(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t e
     LWIP_UNUSED_ARG(err);
     uint32_t len_copied = 0;
     bool continue_recv_fun = true;
-    HTTPC_COMMAND_STATUS cmd_status = CMD_UNKNOWN;
+    HTTPC_COMMAND_STATUS cmd_status = CMD_STATUS_UNKNOWN;
     httpc_state_t *req = (httpc_state_t *)arg;
     httpc_result_t result = HTTPC_RESULT_ERR_UNKNOWN;
 
@@ -541,7 +543,7 @@ err_t data_received_fun(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t e
         pbuf_free(p);
     }
 
-    if (cmd_status == CMD_UNKNOWN && (p->tot_len < header_info.content_lenght || p->tot_len > header_info.content_lenght)) {
+    if (cmd_status == CMD_STATUS_UNKNOWN && (p->tot_len < header_info.content_lenght || p->tot_len > header_info.content_lenght)) {
         cmd_status = CMD_REJT_CONT_LEN;
         result = HTTPC_RESULT_ERR_CONTENT_LEN;
         continue_recv_fun = false;
@@ -581,20 +583,23 @@ err_t data_received_fun(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t e
 
     httpc_close(req, result, req->rx_status, ERR_OK);
 
-    if (CMD_UNKNOWN != cmd_status) {
+    if (CMD_STATUS_UNKNOWN != cmd_status) {
         httpc_req_t request;
         request.cmd_id = header_info.command_id;
         request.cmd_status = cmd_status;
-        request.req_type = REQ_ACK;
-        if (CMD_ACCEPTED != cmd_status) {
-            request.connect_event_type = EVENT_REJECTED;
-        } else {
+        request.req_type = REQ_EVENT;
+        if (CMD_INFO_REQ == cmd_status) {
+            request.connect_event_type = EVENT_INFO;
+        } else if (CMD_ACCEPTED == cmd_status) {
             request.connect_event_type = EVENT_ACCEPTED;
+
+        } else {
+            request.connect_event_type = EVENT_REJECTED;
         }
 
         send_request_to_httpc(request);
     } else {
-        _dbg("bug in FW!");
+        _dbg("bug in WUI FW!");
     }
 
     return ERR_OK;
@@ -621,6 +626,46 @@ void get_ack_str(httpc_req_t *request, char *data, const uint32_t buf_len) {
     }
 }
 
+static void get_info_str(httpc_req_t *request, printer_info_t *info, char *dest, const uint32_t buf_len) {
+    const char *event_name = conn_event_str[request->connect_event_type].name;
+    snprintf(dest, buf_len, "{"
+                            "\"event\":\"%s\","
+                            "\"command_id\":%ld,"
+                            "\"values\": {"
+                            "\"type\":%hhd,"
+                            "\"version\":%hhd,"
+                            "\"firmware\":\"%s\","
+                            "\"mac\":\"%s\","
+                            "\"sn\":\"%s\","
+                            "\"uuid\":\"%s\","
+                            "\"state\":\"%s\","
+                            "}"
+                            "}",
+        event_name, request->cmd_id, info->printer_type, info->printer_version,
+        info->firmware_version, info->mac_address, info->serial_number,
+        info->mcu_uuid, info->printer_state);
+}
+
+static uint32_t get_event_data(char *http_body_str, httpc_req_t *request) {
+    uint32_t content_length = 0;
+    switch (request->connect_event_type) {
+    case EVENT_ACCEPTED:
+    case EVENT_REJECTED:
+        get_ack_str(request, httpc_req_body, REQ_BODY_MAX_SIZE);
+        content_length = strlcpy(http_body_str, httpc_req_body, REQ_BODY_MAX_SIZE);
+        break;
+    case EVENT_INFO: {
+        printer_info_t printer_info;
+        strcpy(printer_info.printer_state, "UNKNOWN");
+        get_printer_info(&printer_info);
+        get_info_str(request, &printer_info, httpc_req_body, REQ_BODY_MAX_SIZE);
+        content_length = strlcpy(http_body_str, httpc_req_body, REQ_BODY_MAX_SIZE);
+    } break;
+    default:
+        break;
+    }
+    return content_length;
+}
 static void create_http_header(char *http_header_str, uint32_t content_length, httpc_req_t *request) {
     _dbg("creating request header");
     char printer_token[CONNECT_TOKEN_SIZE + 1]; // extra space of end of line
@@ -636,7 +681,7 @@ static void create_http_header(char *http_header_str, uint32_t content_length, h
         strlcpy(uri, "/p/telemetry", STR_SIZE_MAX);
         strlcpy(content_type, "application/json", STR_SIZE_MAX);
         break;
-    case REQ_ACK:
+    case REQ_EVENT:
         strlcpy(uri, "/p/events", STR_SIZE_MAX);
         strlcpy(content_type, "application/json", STR_SIZE_MAX);
         break;
@@ -654,11 +699,11 @@ static uint32_t get_reqest_body(char *http_body_str, httpc_req_t *request) {
         get_telemetry_for_connect(httpc_req_body, REQ_BODY_MAX_SIZE);
         content_length = strlcpy(http_body_str, httpc_req_body, REQ_BODY_MAX_SIZE);
         break;
-    case REQ_ACK:
-        get_ack_str(request, httpc_req_body, REQ_BODY_MAX_SIZE);
-        content_length = strlcpy(http_body_str, httpc_req_body, REQ_BODY_MAX_SIZE);
+    case REQ_EVENT:
+        content_length = get_event_data(http_body_str, request);
         break;
     default:
+        _dbg("bug in wui!");
         break;
     }
     return content_length;
