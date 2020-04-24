@@ -114,7 +114,7 @@ void StartWebServerTask(void const *argument) {
     // get settings from ini file
     ETH_Config_t eth_params_t;
     load_ini_params(&eth_params_t);
-    eeprom_set_eth_params(&eth_params_t);
+    save_eth_params(&eth_params_t);
     // LwIP related initalizations
     MX_LWIP_Init();
     http_server_init();

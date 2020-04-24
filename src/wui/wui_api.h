@@ -12,25 +12,29 @@
 #include "lwip/netif.h"
 #include "eeprom.h"
 
+// LAN FLAGS
+#define LAN_ONOFF_FLAG_POS     (1 << 0)
+#define LAN_FLAG_ADDR_TYPE_POS (1 << 1)
+
+#define ETHVAR_MSK(n_id) ((uint16_t)1 << (n_id))
+#define ETHVAR_STATIC_LAN_ADDRS \
+    (ETHVAR_MSK(ETHVAR_LAN_IP4_ADDR) | ETHVAR_MSK(ETHVAR_LAN_IP4_MSK) | ETHVAR_MSK(ETHVAR_LAN_IP4_GW))
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef enum {
-    NETVAR_LAN_FLAGS,
-    NETVAR_HOSTNAME,
-    NETVAR_CONNECT_TOKEN,
-    NETVAR_LAN_IP4_ADDR,
-    NETVAR_LAN_IP4_MSK,
-    NETVAR_LAN_IP4_GW,
-    NETVAR_DNS1,
-    NETVAR_DNS2,
-    NETVAR_CONNECT_IP4,
-} NETVAR_t;
-
-#define NETVAR_MSK(n_id) ((uint16_t)1 << (n_id))
-#define NETVAR_STATIC_LAN_ADDRS \
-    (NETVAR_MSK(NETVAR_LAN_IP4_ADDR) | NETVAR_MSK(NETVAR_LAN_IP4_MSK) | NETVAR_MSK(NETVAR_LAN_IP4_GW))
+    ETHVAR_LAN_FLAGS,
+    ETHVAR_HOSTNAME,
+    ETHVAR_CONNECT_TOKEN,
+    ETHVAR_LAN_IP4_ADDR,
+    ETHVAR_LAN_IP4_MSK,
+    ETHVAR_LAN_IP4_GW,
+    ETHVAR_DNS1,
+    ETHVAR_DNS2,
+    ETHVAR_CONNECT_IP4,
+} ETHVAR_t;
 
 typedef struct {
     uint8_t lan_flag;
@@ -43,10 +47,26 @@ typedef struct {
     uint16_t set_flag;
 } ETH_Config_t;
 
-/* \breif function to save Ethernt configuration to non-volatile memory
-*/
-uint32_t eeprom_set_eth_params(ETH_Config_t *config_t);
+/*!****************************************************************************
+* \brief saves the Ethernet specific parameters to non-volatile memory
+*
+* \param [in] ETH_Config_t* pointer to struct with parameters
+*
+* \return   uint32_t    error value
+*
+* \retval   0 if successful
+*****************************************************************************/
+uint32_t save_eth_params(ETH_Config_t *config_t);
 
+/*!****************************************************************************
+* \brief load from ini file Ethernet specific parameters
+*
+* \param [out] ETH_Config_t* pointer to struct with parameters
+*
+* \return   uint32_t    error value
+*
+* \retval   0 if successful
+*****************************************************************************/
 void load_ini_params(ETH_Config_t *config_t);
 
 #ifdef __cplusplus
