@@ -69,20 +69,20 @@ static HTTPC_COMMAND_STATUS parse_low_level_cmd(const char *request, httpc_heade
 }
 
 static uint8_t parse_high_cmd_args(wui_cmd_t *command, const char *json, jsmntok_t *t, int *i){
-    uint8_t ret_code = 0;
+    HTTPC_COMMAND_STATUS ret_status = CMD_STATUS_UNKNOWN;
     if (json_cmp(json, &t[*i], "args") != 0 || t[*i + 1].type != JSMN_ARRAY || t[*i].size > HIGH_CMD_MAX_ARGS_CNT){
-        return 1;
+        return CMD_REJT_CMD_STRUCT;
     }
     (*i)++;
     switch (command->high_lvl_cmd) {
         case CMD_SEND_INFO:
-            ret_code = 1;
+            return CMD_INFO_REQ;
             break;    
         // TODO: other high level commands
         default:
         break;
     }
-    return ret_code;
+    return ret_status;
 }
 
 HTTPC_COMMAND_STATUS parse_http_reply(char *reply, uint32_t reply_len, httpc_header_info *h_info_ptr) {
@@ -124,19 +124,18 @@ HTTPC_COMMAND_STATUS httpc_json_parser(char *json, uint32_t len) {
             
             if(strcmp(request, "SEND_INFO") == 0){
                 command.high_lvl_cmd = CMD_SEND_INFO;
-                ret_status = CMD_INFO_REQ;
             // TODO: other high level commands
             } else {
                 command.high_lvl_cmd = CMD_UNKNOWN;
             }
 
-            if (parse_high_cmd_args(&command, json, t, &i)){
-                ret_status = CMD_REJT_CMD_STRUCT;
-            }
+            ret_status = parse_high_cmd_args(&command, json, t, &i);
         }
     }
     
-    send_request_to_wui(&command);
+    if(ret_status == CMD_INFO_REQ || ret_status == CMD_ACCEPTED){
+        send_request_to_wui(&command);
+    }
     return ret_status;
 }
 

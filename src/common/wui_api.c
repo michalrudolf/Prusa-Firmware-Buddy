@@ -11,22 +11,20 @@
 #include <string.h>
 #include <stdio.h>
 
+#define PRINTER_TYPE_ADDR       0x0802002F  // 1 B
+#define PRINTER_VERSION_ADDR    0x08020030  // 1 B
+
 void get_eth_params(wui_eth_params_s eth_params) {
 }
 
 void get_printer_info(printer_info_t * printer_info){
-
-
-    //| 0x0802002F - 0x0802002F | 1 B | Printer type
-
-    //| 0x08020030 - 0x08020030 | 1 B | Printer version
     
     // FIRMWARE VERSION
     strlcpy(printer_info->firmware_version, project_version_full, FW_VER_STR_LEN);
     // PRINTER TYPE
-    printer_info->printer_type = PRINTER_TYPE;
+    printer_info->printer_type = *(volatile uint8_t *)PRINTER_TYPE_ADDR;
     // PRINTER_VERSION
-    // TODO: couldn't find PRINTER_VERSION (MINI is 1 and MK4 is 4)
+    printer_info->printer_version = *(volatile uint8_t *)PRINTER_VERSION_ADDR;
     
     char serial_numbers[OTP_SERIAL_NUMBER_SIZE];
     volatile uint8_t mac_addr[OTP_MAC_ADDRESS_SIZE];
