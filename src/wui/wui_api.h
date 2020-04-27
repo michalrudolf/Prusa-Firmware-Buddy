@@ -34,7 +34,7 @@
 #define TURN_LAN_ON(flg)            (flg &= ~LAN_FLAG_ONOFF_POS)    // flip lan switch flg to ON
 #define TURN_LAN_OFF(flg)           (flg |= LAN_FLAG_ONOFF_POS)     // flip lan switch flg to OFF
 
-#define ETHVAR_MSK(n_id) ((uint16_t)1 << (n_id))
+#define ETHVAR_MSK(n_id) ((uint32_t)1 << (n_id))
 #define ETHVAR_STATIC_LAN_ADDRS \
     (ETHVAR_MSK(ETHVAR_LAN_ADDR_IP4) | ETHVAR_MSK(ETHVAR_LAN_MSK_IP4) | ETHVAR_MSK(ETHVAR_LAN_GW_IP4))
 
@@ -78,7 +78,7 @@ typedef struct {
     char hostname[ETH_HOSTNAME_LEN + 1];    // ETH hostname: MAX 20 chars
     connect_t connect;                      // user defined CONNECT configurations
     lan_t lan;                              // user defined CONNECT configurations
-    uint16_t var_mask;                      // mask for setting ethvars
+    uint32_t var_mask;                      // mask for setting ethvars
 } ETH_config_t;
 
 typedef struct {
@@ -91,49 +91,40 @@ typedef struct {
     char printer_state[PRI_STATE_STR_LEN]; // state of the printer, have to be set in wui
 } printer_info_t;
 
+extern ETH_config_t ethconfig;          // configurations of the network - declared in netif_settings.c
+extern ETH_config_t tmp_ethconfig;      // temporary configuration for loading - declared in netif_settings.c
+extern struct netif eth0;               // network interface for ETH - declared in netif_settings.c
+
 /*!****************************************************************************
 * \brief saves the Ethernet specific parameters to non-volatile memory
 *
-* \param [in] ETH_config_t* pointer to struct with parameters
+* \param [in] mask of parameters to set from static ethconfig to non-volatile memory
 *
 * \return   uint32_t    error value
 *
 * \retval   0 if successful
 *****************************************************************************/
-uint32_t save_eth_params(ETH_config_t * config);
+uint32_t save_eth_params(uint32_t mask);
 
 /*!****************************************************************************
 * \brief loads the Ethernet specific parameters from non-volatile memory
 *
-* \param [out] ETH_config_t* pointer to struct with ! SET VAR_MASK !
+* \param [out] mask of parameters to get from memory to static ethconfig structure
 *
 * \return   uint32_t    error value
 *
 * \retval   0 if successful
 *****************************************************************************/
-uint32_t load_eth_params(ETH_config_t * config);
+uint32_t load_eth_params(uint32_t mask);
 
 /*!****************************************************************************
 * \brief load from ini file Ethernet specific parameters
-*
-* \param [out] ETH_Config_t* pointer to struct with parameters
 *
 * \return   uint32_t    error value
 *
 * \retval   1 if successful
 *****************************************************************************/
-uint32_t load_ini_params(ETH_config_t * config);
-
-/*!****************************************************************************
-* \brief save only LAN flag
-*
-* \param [out]  lan flag
-*
-* \return   uint32_t    error value
-*
-* \retval   0 if successful
-*****************************************************************************/
-uint32_t save_lan_flag(uint8_t flg);
+uint32_t load_ini_params(void);
 
 /*!****************************************************************************
 * \brief access user defined addresses in memory and aquire vital printer info
@@ -143,6 +134,14 @@ uint32_t save_lan_flag(uint8_t flg);
 * \retval   0 if successful
 *****************************************************************************/
 void get_printer_info(printer_info_t *printer_info);
+
+/*!****************************************************************************
+* \brief parses MAC address from device's memory to static string
+*
+* \param [out] destination (static MAC address string)
+*****************************************************************************/
+void parse_MAC_address(char * dest);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

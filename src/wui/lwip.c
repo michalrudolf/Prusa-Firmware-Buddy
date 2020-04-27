@@ -64,9 +64,8 @@
 #include "dbg.h"
 #include "ethernetif.h"
 #include "wui_api.h"
+#include "netif_settings.h"
 
-char interface_hostname[ETH_HOSTNAME_LEN + 1];
-struct netif eth0;
 ip4_addr_t ipaddr;
 ip4_addr_t netmask;
 ip4_addr_t gw;
@@ -75,11 +74,9 @@ void Error_Handler(void);
 
 void netif_link_callback(struct netif *eth) {
     ethernetif_update_config(eth);
-    ETH_config_t config;    // TODO: in next step, use netif_settings's static ETH_config*
-    config.var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS);
-    uint8_t ee_flag = load_eth_params(&config);
+    load_eth_params(ETHVAR_LAN_FLAGS);
     if (netif_is_link_up(eth)) {
-        if (IS_LAN_ON(ee_flag)) {
+        if (IS_LAN_ON(ethconfig.lan.flag)) {
             netif_set_up(eth);
         }
     } else {
@@ -88,17 +85,15 @@ void netif_link_callback(struct netif *eth) {
 }
 
 void netif_status_callback(struct netif *eth) {
-    ETH_config_t config;    // TODO: in next step, use netif_settings's static ETH_config*
-    config.var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS);
-    uint8_t ee_flag = load_eth_params(&config);
+    load_eth_params(ETHVAR_LAN_FLAGS);
     if (netif_is_up(eth)) {
-        if (IS_LAN_DHCP(ee_flag)) {
+        if (IS_LAN_DHCP(ethconfig.lan.flag)) {
             dhcp_start(eth);
         } else {
             dhcp_inform(eth);
         }
     } else {
-        if (IS_LAN_DHCP(ee_flag)) {
+        if (IS_LAN_DHCP(ethconfig.lan.flag)) {
             dhcp_stop(eth);
         }
     }
@@ -120,24 +115,22 @@ void MX_LWIP_Init(void) {
     /* Registers the default network interface */
     netif_set_default(&eth0);
 
-    ETH_config_t config;
-    config.var_mask = ETHVAR_EEPROM_CONFIG;
-    load_eth_params(&config);
-    strcpy(interface_hostname, config.hostname);
-    eth0.hostname = interface_hostname;
+    /* Load all eth configuration values stored in non-volatile memory unit */
+    load_eth_params(ETHVAR_EEPROM_CONFIG);
+    eth0.hostname = ethconfig.hostname;
     /* This won't execute until user loads static lan settings at least once (default is DHCP) */
-    if (IS_LAN_STATIC(config.lan.flag)) {
+    if (IS_LAN_STATIC(ethconfig.lan.flag)) {
 
-        ipaddr.addr = config.lan.addr_ip4.addr;
-        netmask.addr = config.lan.msk_ip4.addr;
-        gw.addr = config.lan.gw_ip4.addr;
+        ipaddr.addr = ethconfig.lan.addr_ip4.addr;
+        netmask.addr = ethconfig.lan.msk_ip4.addr;
+        gw.addr = ethconfig.lan.gw_ip4.addr;
 
         netif_set_addr(&eth0, &ipaddr, &netmask, &gw);
     }
-    if (IS_LAN_ON(config.lan.flag) && netif_is_link_up(&eth0)) {
+    if (IS_LAN_ON(ethconfig.lan.flag) && netif_is_link_up(&eth0)) {
         /* When the netif is fully configured and switched on this function must be called */
         netif_set_up(&eth0);
-        if (IS_LAN_DHCP(config.lan.flag)) {
+        if (IS_LAN_DHCP(ethconfig.lan.flag)) {
             /* Start DHCP negotiation for a network interface (IPv4) */
             dhcp_start(&eth0);
         }

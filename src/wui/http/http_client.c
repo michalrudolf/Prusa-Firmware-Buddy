@@ -668,10 +668,8 @@ static uint32_t get_event_data(char *http_body_str, httpc_req_t *request) {
 static void create_http_header(char *http_header_str, uint32_t content_length, httpc_req_t *request) {
     _dbg("creating request header");
     char printer_token[CONNECT_TOKEN_LEN + 1]; // extra space of end of line
-    ETH_config_t config; // TODO: in next step, replace with netif_settings static ETH_config*
-    config.var_mask = ETHVAR_MSK(ETHVAR_CONNECT_TOKEN);
-    load_eth_params(&config);
-    strlcpy(printer_token, config.connect.token, CONNECT_TOKEN_LEN + 1);
+    load_eth_params(ETHVAR_MSK(ETHVAR_CONNECT_TOKEN));
+    strlcpy(printer_token, ethconfig.connect.token, CONNECT_TOKEN_LEN + 1);
 #define STR_SIZE_MAX 50
     char uri[STR_SIZE_MAX] = { 0 };
     char content_type[STR_SIZE_MAX] = { 0 };
@@ -688,7 +686,9 @@ static void create_http_header(char *http_header_str, uint32_t content_length, h
     default:
         break;
     }
-    snprintf(http_header_str, REQ_HEADER_MAX_SIZE - 1, "POST %s HTTP/1.0\r\nPrinter-Token: %s\r\nContent-Length: %lu\r\nContent-Type: %s\r\n\r\n", uri, printer_token, content_length, content_type);
+    snprintf(http_header_str, REQ_HEADER_MAX_SIZE - 1, 
+        "POST %s HTTP/1.0\r\nPrinter-Token: %s\r\nContent-Length: %lu\r\nContent-Type: %s\r\n\r\n", 
+        uri, printer_token, content_length, content_type);
 }
 
 static uint32_t get_reqest_body(char *http_body_str, httpc_req_t *request) {
@@ -729,10 +729,8 @@ static wui_err buddy_http_client_req(httpc_req_t *request) {
     char host_ip4_str[IP4_ADDR_STR_SIZE];
     const char *header_plus_data;
 
-    ETH_config_t config;
-    config.var_mask = ETHVAR_CONNECT_IP4;
-    load_eth_params(&config);
-    strlcpy(host_ip4_str, ip4addr_ntoa(&(config.connect.ip4)), IP4_ADDR_STR_SIZE);
+    load_eth_params(ETHVAR_MSK(ETHVAR_CONNECT_IP4));
+    strlcpy(host_ip4_str, ip4addr_ntoa(&(ethconfig.connect.ip4)), IP4_ADDR_STR_SIZE);
 
     header_plus_data = create_http_request(request);
     if (!header_plus_data) {
@@ -787,16 +785,14 @@ static wui_err buddy_http_client_req(httpc_req_t *request) {
         return ERR_VAL;
     }
 
-    tcp_connect(req->pcb, &(config.connect.ip4), CONNECT_SERVER_PORT, httpc_tcp_connected);
+    tcp_connect(req->pcb, &(ethconfig.connect.ip4), CONNECT_SERVER_PORT, httpc_tcp_connected);
     return ERR_OK;
 }
 
 void buddy_httpc_handler() {
 
-    ETH_config_t config;
-    config.var_mask = ETHVAR_MSK(ETHVAR_CONNECT_IP4);
-    load_eth_params(&config);
-    if (config.connect.ip4.addr == 0) {
+    load_eth_params(ETHVAR_MSK(ETHVAR_CONNECT_IP4));
+    if (ethconfig.connect.ip4.addr == 0) {
         return;
     }
 

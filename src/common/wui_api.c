@@ -63,80 +63,68 @@ static int ini_handler_func(void *user, const char *section, const char *name, c
 
 static ini_handler wui_ini_handler = ini_handler_func;
 
-uint32_t load_ini_params(ETH_config_t * config) {
-    return ini_load_file(wui_ini_handler, (void *)config);
+uint32_t load_ini_params(void) {
+    tmp_ethconfig.var_mask = 0;
+    return ini_load_file(wui_ini_handler, &tmp_ethconfig);
 }
 
-uint32_t save_lan_flag(uint8_t flg){
-    eeprom_set_var(EEVAR_LAN_FLAG, variant8_ui8(flg));
-    return 0;
-}
+uint32_t save_eth_params(uint32_t mask) {
 
-uint32_t save_eth_params(ETH_config_t *config) {
-
-    // type=STATIC/DHCP is in INI file
-    if (config->var_mask & ETHVAR_MSK(ETHVAR_LAN_FLAGS)) {
-        // if lan type is set to STATIC
-        if (IS_LAN_STATIC(config->lan.flag) && (config->var_mask & ETHVAR_STATIC_LAN_ADDRS)) {
-            uint8_t lan_flags = eeprom_get_var(EEVAR_LAN_FLAG).ui8;
-            CHANGE_LAN_TO_STATIC(lan_flags);
-            eeprom_set_var(EEVAR_LAN_FLAG, variant8_ui8(lan_flags));
-            eeprom_set_var(EEVAR_LAN_IP4_ADDR,
-                variant8_ui32(config->lan.addr_ip4.addr));
-            eeprom_set_var(EEVAR_LAN_IP4_MSK,
-                variant8_ui32(config->lan.msk_ip4.addr));
-            eeprom_set_var(EEVAR_LAN_IP4_GW,
-                variant8_ui32(config->lan.gw_ip4.addr));
-        } else {
-            uint8_t lan_flags = eeprom_get_var(EEVAR_LAN_FLAG).ui8;
-            CHANGE_LAN_TO_DHCP(lan_flags);
-            eeprom_set_var(EEVAR_LAN_FLAG, variant8_ui8(lan_flags));
-        }
+    if (mask & ETHVAR_MSK(ETHVAR_LAN_FLAGS)) {
+        eeprom_set_var(EEVAR_LAN_FLAG, variant8_ui16(ethconfig.lan.flag));
     }
-
-    if (config->var_mask & ETHVAR_MSK(ETHVAR_HOSTNAME)) {
-        variant8_t hostname = variant8_pchar(config->hostname, 0, 0);
+    if (mask & ETHVAR_MSK(ETHVAR_LAN_ADDR_IP4)) {
+        eeprom_set_var(EEVAR_LAN_IP4_ADDR, variant8_ui32(ethconfig.lan.addr_ip4.addr));
+    }
+    if (mask & ETHVAR_MSK(ETHVAR_LAN_MSK_IP4)){
+        eeprom_set_var(EEVAR_LAN_IP4_MSK, variant8_ui32(ethconfig.lan.msk_ip4.addr));
+    }
+    if (mask & ETHVAR_MSK(ETHVAR_LAN_GW_IP4)){
+        eeprom_set_var(EEVAR_LAN_IP4_GW, variant8_ui32(ethconfig.lan.gw_ip4.addr));
+    }
+    if (mask & ETHVAR_MSK(ETHVAR_HOSTNAME)) {
+        variant8_t hostname = variant8_pchar(ethconfig.hostname, 0, 0);
         eeprom_set_var(EEVAR_LAN_HOSTNAME, hostname);
         //variant8_done() is not called, variant_pchar with init flag 0 doesnt hold its memory
     }
-
-    if (config->var_mask & ETHVAR_MSK(ETHVAR_CONNECT_TOKEN)) {
-        variant8_t token = variant8_pchar(config->connect.token, 0, 0);
+    if (mask & ETHVAR_MSK(ETHVAR_CONNECT_TOKEN)) {
+        variant8_t token = variant8_pchar(ethconfig.connect.token, 0, 0);
         eeprom_set_var(EEVAR_CONNECT_TOKEN, token);
         //variant8_done() is not called, variant_pchar with init flag 0 doesnt hold its memory
     }
-    if (config->var_mask & ETHVAR_MSK(ETHVAR_CONNECT_IP4)) {
-        eeprom_set_var(EEVAR_CONNECT_IP4, variant8_ui32(config->connect.ip4.addr));
+    if (mask & ETHVAR_MSK(ETHVAR_CONNECT_IP4)) {
+        eeprom_set_var(EEVAR_CONNECT_IP4, variant8_ui32(ethconfig.connect.ip4.addr));
     }
 
     return 0;
 }
 
-uint32_t load_eth_params(ETH_config_t *config) {
+uint32_t load_eth_params(uint32_t mask) {
 
-    if (config->var_mask & ETHVAR_MSK(ETHVAR_LAN_FLAGS)){
-        config->lan.flag = eeprom_get_var(EEVAR_LAN_FLAG).ui8;
+    if (mask & ETHVAR_MSK(ETHVAR_LAN_FLAGS)){
+        ethconfig.lan.flag = eeprom_get_var(EEVAR_LAN_FLAG).ui8;
     }
-
-    if ((config->var_mask & ETHVAR_STATIC_LAN_ADDRS) == ETHVAR_STATIC_LAN_ADDRS) {
-        config->lan.addr_ip4.addr = eeprom_get_var(EEVAR_LAN_IP4_ADDR).ui32;
-        config->lan.msk_ip4.addr = eeprom_get_var(EEVAR_LAN_IP4_MSK).ui32;
-        config->lan.gw_ip4.addr = eeprom_get_var(EEVAR_LAN_IP4_GW).ui32;
+    if (mask & ETHVAR_MSK(ETHVAR_LAN_ADDR_IP4)) {
+        ethconfig.lan.addr_ip4.addr = eeprom_get_var(EEVAR_LAN_IP4_ADDR).ui32;
     }
-
-    if (config->var_mask & ETHVAR_MSK(ETHVAR_HOSTNAME)) {
+    if (mask & ETHVAR_MSK(ETHVAR_LAN_MSK_IP4)) {
+        ethconfig.lan.msk_ip4.addr = eeprom_get_var(EEVAR_LAN_IP4_MSK).ui32;
+    }
+    if (mask & ETHVAR_MSK(ETHVAR_LAN_GW_IP4)) {
+        ethconfig.lan.gw_ip4.addr = eeprom_get_var(EEVAR_LAN_IP4_GW).ui32;
+    }
+    if (mask & ETHVAR_MSK(ETHVAR_HOSTNAME)) {
         variant8_t hostname = eeprom_get_var(EEVAR_LAN_HOSTNAME);
-        strlcpy(config->hostname, hostname.pch, ETH_HOSTNAME_LEN + 1);
+        strlcpy(ethconfig.hostname, hostname.pch, ETH_HOSTNAME_LEN + 1);
         variant8_done(&hostname);
     }
-
-    if (config->var_mask & ETHVAR_MSK(ETHVAR_CONNECT_TOKEN)) {
+    if (mask & ETHVAR_MSK(ETHVAR_CONNECT_TOKEN)) {
         variant8_t token = eeprom_get_var(EEVAR_CONNECT_TOKEN);
-        strlcpy(config->connect.token, token.pch, CONNECT_TOKEN_LEN + 1);
+        strlcpy(ethconfig.connect.token, token.pch, CONNECT_TOKEN_LEN + 1);
         variant8_done(&token);
     }
-    if (config->var_mask & ETHVAR_MSK(ETHVAR_CONNECT_IP4)) {
-        config->connect.ip4.addr = eeprom_get_var(EEVAR_CONNECT_IP4).ui32;
+    if (mask & ETHVAR_MSK(ETHVAR_CONNECT_IP4)) {
+        ethconfig.connect.ip4.addr = eeprom_get_var(EEVAR_CONNECT_IP4).ui32;
     }
 
     return 0;
@@ -150,9 +138,7 @@ void get_printer_info(printer_info_t *printer_info) {
     // PRINTER_VERSION
     printer_info->printer_version = *(volatile uint8_t *)PRINTER_VERSION_ADDR;
     // MAC ADDRESS
-    volatile uint8_t *mac_ptr = (volatile uint8_t *)OTP_MAC_ADDRESS_ADDR;
-    snprintf(printer_info->mac_address, MAC_ADDR_STR_LEN, "%02x:%02x:%02x:%02x:%02x:%02x",
-        *mac_ptr, *(mac_ptr + 1), *(mac_ptr + 2), *(mac_ptr + 3), *(mac_ptr + 4), *(mac_ptr + 5));
+    parse_MAC_address(printer_info->mac_address);
     // SERIAL NUMBER
     for (int i = 0; i < OTP_SERIAL_NUMBER_SIZE; i++) {
         printer_info->serial_number[i] = *(volatile char *)(OTP_SERIAL_NUMBER_ADDR + i);
@@ -160,4 +146,10 @@ void get_printer_info(printer_info_t *printer_info) {
     // UUID - 96 bits
     volatile uint32_t *uuid_ptr = (volatile uint32_t *)OTP_STM32_UUID_ADDR;
     snprintf(printer_info->mcu_uuid, UUID_STR_LEN, "%08lx-%08lx-%08lx", *uuid_ptr, *(uuid_ptr + 1), *(uuid_ptr + 2));
+}
+
+void parse_MAC_address(char * dest){
+    volatile uint8_t *mac_ptr = (volatile uint8_t *)OTP_MAC_ADDRESS_ADDR;
+    snprintf(dest, MAC_ADDR_STR_LEN, "%02x:%02x:%02x:%02x:%02x:%02x",
+        *mac_ptr, *(mac_ptr + 1), *(mac_ptr + 2), *(mac_ptr + 3), *(mac_ptr + 4), *(mac_ptr + 5));
 }
