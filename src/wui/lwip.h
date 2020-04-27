@@ -80,12 +80,12 @@ extern "C" {
 /* lwip customization includes -----------------------------------------------*/
 
 #include "httpd.h"
-#include "eeprom.h"
+#include "ethvars.h"
 /* Global Variables ---------------------------------------------------------*/
 
 #define BUDDY_ENABLE_CONNECT
 extern struct netif eth0;
-extern char interface_hostname[LAN_HOSTNAME_MAX_LEN + 1];
+extern char interface_hostname[ETH_HOSTNAME_LEN + 1];
 extern ETH_HandleTypeDef heth;
 
 /*!****************************************************************************

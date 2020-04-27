@@ -63,9 +63,9 @@
 
 #include "dbg.h"
 #include "ethernetif.h"
+#include "wui_api.h"
 
-#define HOSTNAME_MAX_LEN 20
-char interface_hostname[HOSTNAME_MAX_LEN + 1];
+char interface_hostname[ETH_HOSTNAME_LEN + 1];
 struct netif eth0;
 ip4_addr_t ipaddr;
 ip4_addr_t netmask;
@@ -75,9 +75,11 @@ void Error_Handler(void);
 
 void netif_link_callback(struct netif *eth) {
     ethernetif_update_config(eth);
-    uint8_t ee_flag = eeprom_get_var(EEVAR_LAN_FLAG).ui8;
+    ETH_config_t config;    // TODO: in next step, use netif_settings's static ETH_config*
+    config.var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS);
+    uint8_t ee_flag = load_eth_params(&config);
     if (netif_is_link_up(eth)) {
-        if (!(ee_flag & LAN_EEFLG_ONOFF)) {
+        if (IS_LAN_ON(ee_flag)) {
             netif_set_up(eth);
         }
     } else {
@@ -86,15 +88,17 @@ void netif_link_callback(struct netif *eth) {
 }
 
 void netif_status_callback(struct netif *eth) {
-    uint8_t ee_flag = eeprom_get_var(EEVAR_LAN_FLAG).ui8;
+    ETH_config_t config;    // TODO: in next step, use netif_settings's static ETH_config*
+    config.var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS);
+    uint8_t ee_flag = load_eth_params(&config);
     if (netif_is_up(eth)) {
-        if (!(ee_flag & LAN_EEFLG_TYPE)) {
+        if (IS_LAN_DHCP(ee_flag)) {
             dhcp_start(eth);
         } else {
             dhcp_inform(eth);
         }
     } else {
-        if (!(ee_flag & LAN_EEFLG_TYPE)) {
+        if (IS_LAN_DHCP(ee_flag)) {
             dhcp_stop(eth);
         }
     }
@@ -116,24 +120,24 @@ void MX_LWIP_Init(void) {
     /* Registers the default network interface */
     netif_set_default(&eth0);
 
-    uint8_t ee_lan_flg = eeprom_get_var(EEVAR_LAN_FLAG).ui8;
-    variant8_t hostname = eeprom_get_var(EEVAR_LAN_HOSTNAME);
-    strcpy(interface_hostname, hostname.pch);
-    variant8_done(&hostname);
+    ETH_config_t config;
+    config.var_mask = ETHVAR_EEPROM_CONFIG;
+    load_eth_params(&config);
+    strcpy(interface_hostname, config.hostname);
     eth0.hostname = interface_hostname;
     /* This won't execute until user loads static lan settings at least once (default is DHCP) */
-    if (ee_lan_flg & LAN_EEFLG_TYPE) {
+    if (IS_LAN_STATIC(config.lan.flag)) {
 
-        ipaddr.addr = eeprom_get_var(EEVAR_LAN_IP4_ADDR).ui32;
-        netmask.addr = eeprom_get_var(EEVAR_LAN_IP4_MSK).ui32;
-        gw.addr = eeprom_get_var(EEVAR_LAN_IP4_GW).ui32;
+        ipaddr.addr = config.lan.addr_ip4.addr;
+        netmask.addr = config.lan.msk_ip4.addr;
+        gw.addr = config.lan.gw_ip4.addr;
 
         netif_set_addr(&eth0, &ipaddr, &netmask, &gw);
     }
-    if (!(ee_lan_flg & LAN_EEFLG_ONOFF) && netif_is_link_up(&eth0)) {
+    if (IS_LAN_ON(config.lan.flag) && netif_is_link_up(&eth0)) {
         /* When the netif is fully configured and switched on this function must be called */
         netif_set_up(&eth0);
-        if (!(ee_lan_flg & LAN_EEFLG_TYPE)) {
+        if (IS_LAN_DHCP(config.lan.flag)) {
             /* Start DHCP negotiation for a network interface (IPv4) */
             dhcp_start(&eth0);
         }

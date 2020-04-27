@@ -83,15 +83,15 @@ static void stringify_netinfo(char *param_str, uint8_t flg) {
     strlcpy(ip4_gw_str, ip4addr_ntoa(&(config.lan_ip4_gw)), IP4_ADDR_STR_SIZE);
 
     if (flg) {
-        char save_hostname[LAN_HOSTNAME_MAX_LEN + 1];
+        char save_hostname[ETH_HOSTNAME_LEN + 1];
         variant8_t hostname = eeprom_get_var(EEVAR_LAN_HOSTNAME);
-        strlcpy(save_hostname, hostname.pch, LAN_HOSTNAME_MAX_LEN + 1);
+        strlcpy(save_hostname, hostname.pch, ETH_HOSTNAME_LEN + 1);
         variant8_done(&hostname);
 #ifdef BUDDY_ENABLE_CONNECT
         char ip4_connect_str[IP4_ADDR_STR_SIZE];
-        char save_connect_token[CONNECT_TOKEN_SIZE + 1];
+        char save_connect_token[CONNECT_TOKEN_LEN + 1];
         variant8_t connect_token = eeprom_get_var(EEVAR_CONNECT_TOKEN);
-        strlcpy(save_connect_token, connect_token.pch, CONNECT_TOKEN_SIZE + 1);
+        strlcpy(save_connect_token, connect_token.pch, CONNECT_TOKEN_LEN + 1);
         variant8_done(&connect_token);
         config.connect_ip4.addr = eeprom_get_var(EEVAR_CONNECT_IP4).ui32;
         strlcpy(ip4_connect_str, ip4addr_ntoa(&(config.connect_ip4)), IP4_ADDR_STR_SIZE);
@@ -222,8 +222,8 @@ static int ini_load_handler(void *user, const char *section, const char *name, c
             tmp_config->set_flag |= NETVAR_MSK(NETVAR_LAN_FLAGS);
         }
     } else if (MATCH("lan_ip4", "hostname")) {
-        strlcpy(tmp_config->hostname, value, LAN_HOSTNAME_MAX_LEN + 1);
-        tmp_config->hostname[LAN_HOSTNAME_MAX_LEN] = '\0';
+        strlcpy(tmp_config->hostname, value, ETH_HOSTNAME_LEN + 1);
+        tmp_config->hostname[ETH_HOSTNAME_LEN] = '\0';
         tmp_config->set_flag |= NETVAR_MSK(NETVAR_HOSTNAME);
     } else if (MATCH("lan_ip4", "address")) {
         if (ip4addr_aton(value, &tmp_config->lan_ip4_addr)) {
@@ -244,8 +244,8 @@ static int ini_load_handler(void *user, const char *section, const char *name, c
             tmp_config->set_flag |= NETVAR_MSK(NETVAR_CONNECT_IP4);
         }
     } else if (MATCH("connect", "token")) {
-        strlcpy(tmp_config->connect_token, value, CONNECT_TOKEN_SIZE + 1);
-        tmp_config->connect_token[CONNECT_TOKEN_SIZE] = '\0';
+        strlcpy(tmp_config->connect_token, value, CONNECT_TOKEN_LEN + 1);
+        tmp_config->connect_token[CONNECT_TOKEN_LEN] = '\0';
         tmp_config->set_flag |= NETVAR_MSK(NETVAR_CONNECT_TOKEN);
     }
 #endif // BUDDY_ENABLE_CONNECT
@@ -267,7 +267,7 @@ static uint8_t _load_config(void) {
 
     if (!(tmp_config.lan_flag & LAN_EEFLG_TYPE)) {
         if (tmp_config.set_flag & NETVAR_MSK(NETVAR_HOSTNAME)) {
-            strlcpy(interface_hostname, tmp_config.hostname, LAN_HOSTNAME_MAX_LEN + 1);
+            strlcpy(interface_hostname, tmp_config.hostname, ETH_HOSTNAME_LEN + 1);
             eth0.hostname = interface_hostname;
             variant8_t hostname = variant8_pchar(interface_hostname, 0, 0);
             eeprom_set_var(EEVAR_LAN_HOSTNAME, hostname);
@@ -290,7 +290,7 @@ static uint8_t _load_config(void) {
             return 0;
         } else {
             if (tmp_config.set_flag & NETVAR_MSK(NETVAR_HOSTNAME)) {
-                strlcpy(interface_hostname, tmp_config.hostname, LAN_HOSTNAME_MAX_LEN + 1);
+                strlcpy(interface_hostname, tmp_config.hostname, ETH_HOSTNAME_LEN + 1);
                 eth0.hostname = interface_hostname;
                 variant8_t hostname = variant8_pchar(tmp_config.hostname, 0, 0);
                 eeprom_set_var(EEVAR_LAN_HOSTNAME, hostname);

@@ -62,7 +62,6 @@
 /* USER CODE BEGIN 0 */
 #include "lwip/netifapi.h"
 #include "otp.h"
-#include "eeprom.h"
 #include <stdbool.h>
 /* USER CODE END 0 */
 
