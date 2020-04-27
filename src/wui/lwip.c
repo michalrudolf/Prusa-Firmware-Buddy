@@ -64,7 +64,6 @@
 #include "dbg.h"
 #include "ethernetif.h"
 #include "wui_api.h"
-#include "netif_settings.h"
 
 ip4_addr_t ipaddr;
 ip4_addr_t netmask;

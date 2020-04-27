@@ -10,7 +10,6 @@
 #include "wui_vars.h"
 #include "marlin_client.h"
 #include "wui_api.h"
-#include "netif_settings.h"
 #include "lwip.h"
 #include "ethernetif.h"
 #include "http_client.h"
