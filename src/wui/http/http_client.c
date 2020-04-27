@@ -10,7 +10,6 @@
 #include <stdbool.h>
 #include "stm32f4xx_hal.h"
 #include <string.h>
-#include "eeprom.h"
 #include "lwip/altcp.h"
 #include "lwip.h"
 #include "marlin_vars.h"
@@ -668,10 +667,11 @@ static uint32_t get_event_data(char *http_body_str, httpc_req_t *request) {
 }
 static void create_http_header(char *http_header_str, uint32_t content_length, httpc_req_t *request) {
     _dbg("creating request header");
-    char printer_token[CONNECT_TOKEN_SIZE + 1]; // extra space of end of line
-    variant8_t printer_token_ptr = eeprom_get_var(EEVAR_CONNECT_TOKEN);
-    strlcpy(printer_token, printer_token_ptr.pch, CONNECT_TOKEN_SIZE + 1);
-    variant8_done(&printer_token_ptr);
+    char printer_token[CONNECT_TOKEN_LEN + 1]; // extra space of end of line
+    ETH_config_t config; // TODO: in next step, replace with netif_settings static ETH_config*
+    config.var_mask = ETHVAR_MSK(ETHVAR_CONNECT_TOKEN);
+    load_eth_params(&config);
+    strlcpy(printer_token, config.connect.token, CONNECT_TOKEN_LEN + 1);
 #define STR_SIZE_MAX 50
     char uri[STR_SIZE_MAX] = { 0 };
     char content_type[STR_SIZE_MAX] = { 0 };
@@ -726,12 +726,13 @@ static wui_err buddy_http_client_req(httpc_req_t *request) {
     mem_size_t mem_alloc_len;
     int req_len, req_len2;
     httpc_state_t *req;
-    ip4_addr_t host_ip4;
     char host_ip4_str[IP4_ADDR_STR_SIZE];
     const char *header_plus_data;
 
-    host_ip4.addr = eeprom_get_var(EEVAR_CONNECT_IP4).ui32;
-    strlcpy(host_ip4_str, ip4addr_ntoa(&host_ip4), IP4_ADDR_STR_SIZE);
+    ETH_config_t config;
+    config.var_mask = ETHVAR_CONNECT_IP4;
+    load_eth_params(&config);
+    strlcpy(host_ip4_str, ip4addr_ntoa(&(config.connect.ip4)), IP4_ADDR_STR_SIZE);
 
     header_plus_data = create_http_request(request);
     if (!header_plus_data) {
@@ -786,13 +787,16 @@ static wui_err buddy_http_client_req(httpc_req_t *request) {
         return ERR_VAL;
     }
 
-    tcp_connect(req->pcb, &host_ip4, CONNECT_SERVER_PORT, httpc_tcp_connected);
+    tcp_connect(req->pcb, &(config.connect.ip4), CONNECT_SERVER_PORT, httpc_tcp_connected);
     return ERR_OK;
 }
 
 void buddy_httpc_handler() {
 
-    if (eeprom_get_var(EEVAR_CONNECT_IP4).ui32 == 0) {
+    ETH_config_t config;
+    config.var_mask = ETHVAR_MSK(ETHVAR_CONNECT_IP4);
+    load_eth_params(&config);
+    if (config.connect.ip4.addr == 0) {
         return;
     }
 

@@ -58,8 +58,6 @@
 
 #define EEVAR_CRC32 0x1a // uint32_t crc32 for
 
-#define LAN_HOSTNAME_MAX_LEN 20
-#define CONNECT_TOKEN_SIZE   20
 #define LAN_EEFLG_ONOFF      1 //EEPROM flag for user-defined settings (SW turn OFF/ON of the LAN)
 #define LAN_EEFLG_TYPE       2 //EEPROM flag for user-defined settings (Switch between dhcp and static)
 

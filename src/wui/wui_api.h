@@ -21,7 +21,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+typedef struct {
     uint8_t printer_type;                  // Printer type (defined in CMakeLists.txt)
     uint8_t printer_version;               // Printer varsion (Stored in FLASH)
     char firmware_version[FW_VER_STR_LEN]; // Full project's version (4.0.3-BETA+1035.PR111.B4)
@@ -31,7 +31,6 @@ extern "C" {
     char printer_state[PRI_STATE_STR_LEN]; // state of the printer, have to be set in wui
 } printer_info_t;
 
-typedef struct {
 /*!****************************************************************************
 * \brief saves the Ethernet specific parameters to non-volatile memory
 *
@@ -44,16 +43,45 @@ typedef struct {
 uint32_t save_eth_params(ETH_config_t * config);
 
 /*!****************************************************************************
+* \brief loads the Ethernet specific parameters from non-volatile memory
+*
+* \param [out] ETH_config_t* pointer to struct with ! SET VAR_MASK !
+*
+* \return   uint32_t    error value
+*
+* \retval   0 if successful
+*****************************************************************************/
+uint32_t load_eth_params(ETH_config_t * config);
+
+/*!****************************************************************************
 * \brief load from ini file Ethernet specific parameters
 *
 * \param [out] ETH_Config_t* pointer to struct with parameters
 *
 * \return   uint32_t    error value
 *
+* \retval   1 if successful
+*****************************************************************************/
+uint32_t load_ini_params(ETH_config_t * config);
+
+/*!****************************************************************************
+* \brief save only LAN flag
+*
+* \param [out]  lan flag
+*
+* \return   uint32_t    error value
+*
 * \retval   0 if successful
 *****************************************************************************/
-void load_ini_params(ETH_config_t * config);
+uint32_t save_lan_flag(uint8_t flg);
 
+/*!****************************************************************************
+* \brief access user defined addresses in memory and aquire vital printer info
+*
+* \param [out] printer_info* pointer to struct with storage for printer info
+*
+* \retval   0 if successful
+*****************************************************************************/
 void get_printer_info(printer_info_t *printer_info);
 #ifdef __cplusplus
 }

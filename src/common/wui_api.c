@@ -27,34 +27,34 @@ static int ini_handler_func(void *user, const char *section, const char *name, c
     if (MATCH("lan_ip4", "type")) {
         if (strncmp(value, "DHCP", 4) == 0 || strncmp(value, "dhcp", 4) == 0) {
             CHANGE_LAN_TO_DHCP(tmp_config->lan.flag);
-            tmp_config->set_flag |= ETHVAR_MSK(ETHVAR_LAN_FLAGS);
+            tmp_config->var_mask |= ETHVAR_MSK(ETHVAR_LAN_FLAGS);
         } else if (strncmp(value, "STATIC", 6) == 0 || strncmp(value, "static", 6) == 0) {
             CHANGE_LAN_TO_STATIC(tmp_config->lan.flag);
-            tmp_config->set_flag |= ETHVAR_MSK(ETHVAR_LAN_FLAGS);
+            tmp_config->var_mask |= ETHVAR_MSK(ETHVAR_LAN_FLAGS);
         }
     } else if (MATCH("lan_ip4", "hostname")) {
         strlcpy(tmp_config->hostname, value, ETH_HOSTNAME_LEN + 1);
-        tmp_config->hostname[LAN_HOSTNAME_MAX_LEN] = '\0';
-        tmp_config->set_flag |= ETHVAR_MSK(ETHVAR_HOSTNAME);
+        tmp_config->hostname[ETH_HOSTNAME_LEN] = '\0';
+        tmp_config->var_mask |= ETHVAR_MSK(ETHVAR_HOSTNAME);
     } else if (MATCH("lan_ip4", "address")) {
         if (ip4addr_aton(value, &tmp_config->lan.addr_ip4)) {
-            tmp_config->set_flag |= ETHVAR_MSK(ETHVAR_LAN_ADDR_IP4);
+            tmp_config->var_mask |= ETHVAR_MSK(ETHVAR_LAN_ADDR_IP4);
         }
     } else if (MATCH("lan_ip4", "mask")) {
         if (ip4addr_aton(value, &tmp_config->lan.msk_ip4)) {
-            tmp_config->set_flag |= ETHVAR_MSK(ETHVAR_LAN_MSK_IP4);
+            tmp_config->var_mask |= ETHVAR_MSK(ETHVAR_LAN_MSK_IP4);
         }
     } else if (MATCH("lan_ip4", "gateway")) {
         if (ip4addr_aton(value, &tmp_config->lan.gw_ip4)) {
-            tmp_config->set_flag |= ETHVAR_MSK(ETHVAR_LAN_GW_IP4);
+            tmp_config->var_mask |= ETHVAR_MSK(ETHVAR_LAN_GW_IP4);
         }
     } else if (MATCH("connect", "address")) {
         if (ip4addr_aton(value, &tmp_config->connect.ip4)) {
-            tmp_config->set_flag |= ETHVAR_MSK(ETHVAR_CONNECT_IP4);
+            tmp_config->var_mask |= ETHVAR_MSK(ETHVAR_CONNECT_IP4);
         }
     } else if (MATCH("connect", "token")) {
         strlcpy(tmp_config->connect.token, value, CONNECT_TOKEN_LEN + 1);
-        tmp_config->set_flag |= ETHVAR_MSK(ETHVAR_CONNECT_TOKEN);
+        tmp_config->var_mask |= ETHVAR_MSK(ETHVAR_CONNECT_TOKEN);
     } else {
         return 0; /* unknown section/name, error */
     }
@@ -63,16 +63,21 @@ static int ini_handler_func(void *user, const char *section, const char *name, c
 
 static ini_handler wui_ini_handler = ini_handler_func;
 
-void load_ini_params(ETH_config_t * config) {
-    ini_load_file(wui_ini_handler, (void *)config);
+uint32_t load_ini_params(ETH_config_t * config) {
+    return ini_load_file(wui_ini_handler, (void *)config);
+}
+
+uint32_t save_lan_flag(uint8_t flg){
+    eeprom_set_var(EEVAR_LAN_FLAG, variant8_ui8(flg));
+    return 0;
 }
 
 uint32_t save_eth_params(ETH_config_t *config) {
 
     // type=STATIC/DHCP is in INI file
-    if (config->set_flag & ETHVAR_MSK(ETHVAR_LAN_FLAGS)) {
+    if (config->var_mask & ETHVAR_MSK(ETHVAR_LAN_FLAGS)) {
         // if lan type is set to STATIC
-        if (IS_LAN_STATIC(config->lan.flag) && (config->set_flag & ETHVAR_STATIC_LAN_ADDRS)) {
+        if (IS_LAN_STATIC(config->lan.flag) && (config->var_mask & ETHVAR_STATIC_LAN_ADDRS)) {
             uint8_t lan_flags = eeprom_get_var(EEVAR_LAN_FLAG).ui8;
             CHANGE_LAN_TO_STATIC(lan_flags);
             eeprom_set_var(EEVAR_LAN_FLAG, variant8_ui8(lan_flags));
@@ -89,19 +94,49 @@ uint32_t save_eth_params(ETH_config_t *config) {
         }
     }
 
-    if (config->set_flag & ETHVAR_MSK(ETHVAR_HOSTNAME)) {
+    if (config->var_mask & ETHVAR_MSK(ETHVAR_HOSTNAME)) {
         variant8_t hostname = variant8_pchar(config->hostname, 0, 0);
         eeprom_set_var(EEVAR_LAN_HOSTNAME, hostname);
         //variant8_done() is not called, variant_pchar with init flag 0 doesnt hold its memory
     }
 
-    if (config->set_flag & ETHVAR_MSK(ETHVAR_CONNECT_TOKEN)) {
+    if (config->var_mask & ETHVAR_MSK(ETHVAR_CONNECT_TOKEN)) {
         variant8_t token = variant8_pchar(config->connect.token, 0, 0);
         eeprom_set_var(EEVAR_CONNECT_TOKEN, token);
         //variant8_done() is not called, variant_pchar with init flag 0 doesnt hold its memory
     }
-    if (config->set_flag & ETHVAR_MSK(ETHVAR_CONNECT_IP4)) {
+    if (config->var_mask & ETHVAR_MSK(ETHVAR_CONNECT_IP4)) {
         eeprom_set_var(EEVAR_CONNECT_IP4, variant8_ui32(config->connect.ip4.addr));
+    }
+
+    return 0;
+}
+
+uint32_t load_eth_params(ETH_config_t *config) {
+
+    if (config->var_mask & ETHVAR_MSK(ETHVAR_LAN_FLAGS)){
+        config->lan.flag = eeprom_get_var(EEVAR_LAN_FLAG).ui8;
+    }
+
+    if ((config->var_mask & ETHVAR_STATIC_LAN_ADDRS) == ETHVAR_STATIC_LAN_ADDRS) {
+        config->lan.addr_ip4.addr = eeprom_get_var(EEVAR_LAN_IP4_ADDR).ui32;
+        config->lan.msk_ip4.addr = eeprom_get_var(EEVAR_LAN_IP4_MSK).ui32;
+        config->lan.gw_ip4.addr = eeprom_get_var(EEVAR_LAN_IP4_GW).ui32;
+    }
+
+    if (config->var_mask & ETHVAR_MSK(ETHVAR_HOSTNAME)) {
+        variant8_t hostname = eeprom_get_var(EEVAR_LAN_HOSTNAME);
+        strlcpy(config->hostname, hostname.pch, ETH_HOSTNAME_LEN + 1);
+        variant8_done(&hostname);
+    }
+
+    if (config->var_mask & ETHVAR_MSK(ETHVAR_CONNECT_TOKEN)) {
+        variant8_t token = eeprom_get_var(EEVAR_CONNECT_TOKEN);
+        strlcpy(config->connect.token, token.pch, CONNECT_TOKEN_LEN + 1);
+        variant8_done(&token);
+    }
+    if (config->var_mask & ETHVAR_MSK(ETHVAR_CONNECT_IP4)) {
+        config->connect.ip4.addr = eeprom_get_var(EEVAR_CONNECT_IP4).ui32;
     }
 
     return 0;

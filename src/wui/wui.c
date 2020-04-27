@@ -13,7 +13,6 @@
 #include "lwip.h"
 #include "ethernetif.h"
 #include "http_client.h"
-#include "eeprom.h"
 #include <string.h>
 #include "dbg.h"
 

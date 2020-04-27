@@ -45,9 +45,9 @@ typedef struct {
 
 typedef struct {
     uint8_t lan_flag;
-    char hostname[LAN_HOSTNAME_MAX_LEN + 1];
+    char hostname[ETH_HOSTNAME_LEN + 1];
 #ifdef BUDDY_ENABLE_CONNECT
-    char connect_token[CONNECT_TOKEN_SIZE + 1];
+    char connect_token[CONNECT_TOKEN_LEN + 1];
     ip4_addr_t connect_ip4;
 #endif // BUDDY_ENABLE_CONNECT
     ip4_addr_t lan_ip4_addr;

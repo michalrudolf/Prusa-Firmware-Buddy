@@ -68,7 +68,7 @@ typedef struct {
     char hostname[ETH_HOSTNAME_LEN + 1];    // ETH hostname: MAX 20 chars
     connect_t connect;                      // user defined CONNECT configurations
     lan_t lan;                              // user defined CONNECT configurations
-    uint16_t set_flag;                      // mask for setting ethvars
+    uint16_t var_mask;                      // mask for setting ethvars
 } ETH_config_t;
 
 #endif //ETHVARS_H
