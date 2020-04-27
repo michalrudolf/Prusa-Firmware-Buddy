@@ -80,7 +80,7 @@ extern "C" {
 /* lwip customization includes -----------------------------------------------*/
 
 #include "httpd.h"
-#include "ethvars.h"
+#include "wui_api.h"
 /* Global Variables ---------------------------------------------------------*/
 
 #define BUDDY_ENABLE_CONNECT

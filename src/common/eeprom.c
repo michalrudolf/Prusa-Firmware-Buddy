@@ -10,7 +10,7 @@
 #include "ff.h"
 #include "crc32.h"
 #include "version.h"
-#include "ethvars.h"
+#include "wui_api.h"
 
 #define EEPROM_VARCOUNT (sizeof(eeprom_map) / sizeof(eeprom_entry_t))
 #define EEPROM_DATASIZE sizeof(eeprom_vars_t)
