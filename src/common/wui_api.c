@@ -13,8 +13,6 @@
 #include "ini_handler.h"
 #include "eeprom.h"
 #include "string.h"
-#include "netifapi.h"
-#include "dhcp.h"
 
 #define PRINTER_TYPE_ADDR    0x0802002F // 1 B
 #define PRINTER_VERSION_ADDR 0x08020030 // 1 B
@@ -182,7 +180,7 @@ void stringify_eth_for_screen(char * dest, ETH_config_t * config) {
     ip4addr_ntoa_r(&(config->lan.addr_ip4), addr, IP4_ADDR_STR_SIZE);
     ip4addr_ntoa_r(&(config->lan.msk_ip4), msk, IP4_ADDR_STR_SIZE);
     ip4addr_ntoa_r(&(config->lan.gw_ip4), gw, IP4_ADDR_STR_SIZE);
-    parse_MAC_addr(mac);
+    parse_MAC_address(mac);
 
     snprintf(dest, 150, "IPv4 Address:\n  %s      \nIPv4 Netmask:\n  %s      \nIPv4 Gateway:\n  %s      \nMAC Address:\n  %s",
         addr, msk, gw, mac);
