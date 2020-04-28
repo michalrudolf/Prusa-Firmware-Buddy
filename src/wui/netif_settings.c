@@ -1,6 +1,7 @@
-#include "netif_settings.h"
 #include "netifapi.h"
 #include "dhcp.h"
+#include "wui_api.h"
+#include "lwip.h"
 
 struct netif eth0;          // network interface for ETH
 char eth_hostname[ETH_HOSTNAME_LEN + 1] = { 0 };
@@ -79,4 +80,7 @@ void set_LAN_to_dhcp(ETH_config_t *config) {
         netifapi_netif_set_up(&eth0);
     }
 }
-        
+
+uint8_t dhcp_addrs_are_supplied(void){
+    return dhcp_supplied_address(&eth0);
+}

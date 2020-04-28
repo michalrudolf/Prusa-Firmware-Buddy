@@ -12,6 +12,7 @@ target_sources(WUI INTERFACE
   progress_data_wrapper.cpp
   lwip.c
   ethernetif.c
+  netif_settings.c
 )
 
 target_include_directories(

@@ -44,24 +44,5 @@ typedef struct {
     uint32_t var_mask;                      // mask for setting ethvars
 } ETH_config_t;
 
-extern char eth_hostname[ETH_HOSTNAME_LEN + 1];     //static string storing ethernet hostname
-
-void get_addrs_from_dhcp(ETH_config_t * config);
-
-ETH_STATUS_t eth_status(ETH_config_t * config);
-
-/*!****************************************************************************
-* \brief Turns software switch of LAN netif to OFF
-*****************************************************************************/
-void turn_off_LAN(ETH_config_t *config);
-
-/*!****************************************************************************
-* \brief Turns software switch of LAN netif to ON
-*****************************************************************************/
-void turn_on_LAN(ETH_config_t *config);
-
-void set_LAN_to_static(ETH_config_t *config);
-
-void set_LAN_to_dhcp(ETH_config_t *config);
-
+extern char eth_hostname[ETH_HOSTNAME_LEN + 1];     // static string storing ethernet hostname
 #endif //NETIF_SETTINGS_H

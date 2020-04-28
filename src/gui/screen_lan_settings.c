@@ -39,8 +39,9 @@ static void _screen_lan_settings_item(window_menu_t *pwindow_menu, uint16_t inde
 }
 
 static void refresh_addresses(screen_t *screen) {
-    update_eth_addrs();
-    stringify_eth_for_screen(plan_str);
+    ETH_config_t ethconfig;
+    update_eth_addrs(&ethconfig);
+    stringify_eth_for_screen(plan_str, &ethconfig);
     plsd->text.text = plan_str;
     plsd->text.win.flg |= WINDOW_FLG_INVALID;
     gui_invalidate();
@@ -79,18 +80,23 @@ static void screen_lan_settings_init(screen_t *screen) {
     plsd->items[0] = menu_item_return;
     memcpy(plsd->items + 1, _menu_lan_items, count * sizeof(menu_item_t));
 
-    load_eth_params(ETHVAR_MSK(ETHVAR_LAN_FLAGS));
+    ETH_config_t ethconfig;
+    ethconfig.var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS);
+    load_eth_params(&ethconfig);
 
     plsd->items[MI_SWITCH].item.wi_switch_select.index = IS_LAN_OFF(ethconfig.lan.flag) ? 1 : 0;
     plsd->items[MI_TYPE].item.wi_switch_select.index = IS_LAN_STATIC(ethconfig.lan.flag) ? 1 : 0;
-    if (IS_LAN_ON(ethconfig.lan.flag) && IS_LAN_DHCP(ethconfig.lan.flag) && !dhcp_supplied_address(&eth0)) {
+    if (IS_LAN_ON(ethconfig.lan.flag) && IS_LAN_DHCP(ethconfig.lan.flag) && dhcp_addrs_are_supplied()) {
         conn_flg = true;
     }
 
     refresh_addresses(screen);
 }
 static uint8_t save_config(void) {
-    stringify_eth_for_ini(ini_file_str);
+    ETH_config_t ethconfig;
+    ethconfig.var_mask = ETHVAR_EEPROM_CONFIG;
+    load_eth_params(&ethconfig);
+    stringify_eth_for_ini(ini_file_str, &ethconfig);
     return ini_save_file(ini_file_str);
 }
 
@@ -100,7 +106,10 @@ static int screen_lan_settings_event(screen_t *screen, window_t *window,
     window_header_events(&(plsd->header));
 
     if (conn_flg) {
-        if (IS_LAN_DHCP(ethconfig.lan.flag) || dhcp_supplied_address(&eth0)) {
+        ETH_config_t ethconfig;
+        ethconfig.var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS);
+        load_eth_params(&ethconfig);
+        if (IS_LAN_DHCP(ethconfig.lan.flag) || dhcp_supplied_are_address()) {
             conn_flg = false;
             refresh_addresses(screen);
         }
@@ -115,19 +124,27 @@ static int screen_lan_settings_event(screen_t *screen, window_t *window,
         screen_close();
         return 1;
     case MI_SWITCH: {
+        ETH_config_t ethconfig;
+        ethconfig.var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS);
+        load_eth_params(&ethconfig);
         if (IS_LAN_ON(ethconfig.lan.flag)) {
-            lan_turn_off();
+            turn_LAN_off(&ethconfig);
+            save_eth_params(&ethconfig);
             refresh_addresses(screen);
         } else {
-            lan_turn_on();
+            turn_LAN_on(&ethconfig);
+            save_eth_params(&ethconfig);
             refresh_addresses(screen);
             conn_flg = true;
         }
         break;
     }
     case MI_TYPE: {
+        ETH_config_t ethconfig;
+        ethconfig.var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS) | ETHVAR_MSK(ETHVAR_LAN_ADDR_IP4);
+        load_eth_params(&ethconfig);
         if (IS_LAN_DHCP(ethconfig.lan.flag)) {
-            if (eeprom_get_var(EEVAR_LAN_IP4_ADDR).ui32 == 0) {
+            if (ethconfig.lan.addr_ip4.addr == 0) {
                 if (gui_msgbox("Static IPv4 addresses were not set.",
                         MSGBOX_BTN_OK | MSGBOX_ICO_ERROR)
                     == MSGBOX_RES_OK) {
@@ -135,13 +152,18 @@ static int screen_lan_settings_event(screen_t *screen, window_t *window,
                 }
                 return 0;
             }
-            lan_set_static();
-            stringify_eth_for_screen(plan_str);
+            ethconfig.var_mask |= ETHVAR_STATIC_LAN_ADDRS;
+            load_eth_params(&ethconfig);
+            set_LAN_to_static(&ethconfig);
+            save_eth_params(&ethconfig);
+            stringify_eth_for_screen(plan_str, &ethconfig);
             plsd->text.text = plan_str;
             plsd->text.win.flg |= WINDOW_FLG_INVALID;
             gui_invalidate();
         } else {
-            lan_set_dhcp();
+            set_LAN_to_dhcp(&ethconfig);
+            ethconfig.var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS);
+            save_eth_params(&ethconfig);
             refresh_addresses(screen);
             if (IS_LAN_DHCP(ethconfig.lan.flag)) {
                 conn_flg = true;
@@ -178,13 +200,18 @@ static int screen_lan_settings_event(screen_t *screen, window_t *window,
         } else {
             if (load_ini_params()) {
                 if (gui_msgbox("Settings successfully loaded", MSGBOX_BTN_OK | MSGBOX_ICO_INFO) == MSGBOX_RES_OK) {
+                    ETH_config_t ethconfig;
+                    ethconfig.var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS);
+                    load_eth_params(&ethconfig);
                     plsd->items[MI_TYPE].item.wi_switch_select.index = IS_LAN_STATIC(ethconfig.lan.flag) ? 1 : 0;
                     window_invalidate(plsd->menu.win.id);
                     if (IS_LAN_DHCP(ethconfig.lan.flag)) {
                         refresh_addresses(screen);
                         conn_flg = true;
                     } else {
-                        stringify_eth_for_screen(plan_str);
+                        ethconfig.var_mask = ETHVAR_STATIC_LAN_ADDRS;
+                        load_eth_params(&ethconfig);
+                        stringify_eth_for_screen(plan_str, &ethconfig);
                         plsd->text.text = plan_str;
                         plsd->text.win.flg |= WINDOW_FLG_INVALID;
                     }

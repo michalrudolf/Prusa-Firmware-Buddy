@@ -133,6 +133,53 @@ uint32_t set_loaded_eth_params(ETH_config_t * config);
 ********************************************************************************************/
 void update_eth_addrs(ETH_config_t *config);
 
+/*!****************************************************************************
+* \brief Returns addresses aquired/or not (0.0.0.0) from DHCP server
+*
+* \param [in] config - structure that stores currnet ethernet configurations
+*****************************************************************************/
+void get_addrs_from_dhcp(ETH_config_t * config);
+/*!****************************************************************************
+* \brief Returns ethernet status
+*
+* \param [in] config - structure that stores currnet ethernet configurations
+*
+* \return ETH_STATUS_t status enum of possible cases (unlinked, netif down, netif up)
+*****************************************************************************/
+ETH_STATUS_t eth_status(ETH_config_t * config);
+
+/*!****************************************************************************
+* \brief Turns software switch of ETH netif to OFF
+*
+* \param [out] config - structure that stores currnet ethernet configurations
+*****************************************************************************/
+void turn_off_LAN(ETH_config_t *config);
+
+/*!****************************************************************************
+* \brief Turns software switch of ETH netif to ON
+*
+* \param [out] config - structure that stores currnet ethernet configurations
+*****************************************************************************/
+void turn_on_LAN(ETH_config_t *config);
+
+/*!****************************************************************************
+* \brief Switches ETH netif to use user-defined STATIC addresses
+*
+* \param [in] config - structure that stores currnet ethernet configurations
+*****************************************************************************/
+void set_LAN_to_static(ETH_config_t *config);
+
+/*!****************************************************************************
+* \brief Switches ETH netif to use addresses from DHCP server
+*
+* \param [out] config - structure that stores currnet ethernet configurations
+*****************************************************************************/
+void set_LAN_to_dhcp(ETH_config_t *config);
+
+/*!****************************************************************************
+* \brief Returns if DHCP server already supplied ip addresses
+*****************************************************************************/
+uint8_t dhcp_addrs_are_supplied(void);
 #ifdef __cplusplus
 }
 #endif // __cplusplus

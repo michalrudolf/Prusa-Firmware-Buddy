@@ -668,7 +668,9 @@ static uint32_t get_event_data(char *http_body_str, httpc_req_t *request) {
 static void create_http_header(char *http_header_str, uint32_t content_length, httpc_req_t *request) {
     _dbg("creating request header");
     char printer_token[CONNECT_TOKEN_LEN + 1]; // extra space of end of line
-    load_eth_params(ETHVAR_MSK(ETHVAR_CONNECT_TOKEN));
+    ETH_config_t ethconfig;
+    ethconfig.var_mask = ETHVAR_MSK(ETHVAR_CONNECT_TOKEN);
+    load_eth_params(&ethconfig);
     strlcpy(printer_token, ethconfig.connect.token, CONNECT_TOKEN_LEN + 1);
 #define STR_SIZE_MAX 50
     char uri[STR_SIZE_MAX] = { 0 };
@@ -728,8 +730,10 @@ static wui_err buddy_http_client_req(httpc_req_t *request) {
     httpc_state_t *req;
     char host_ip4_str[IP4_ADDR_STR_SIZE];
     const char *header_plus_data;
-
-    load_eth_params(ETHVAR_MSK(ETHVAR_CONNECT_IP4));
+    ETH_config_t ethconfig;
+    
+    ethconfig.var_mask = ETHVAR_MSK(ETHVAR_CONNECT_IP4);
+    load_eth_params(&ethconfig);
     strlcpy(host_ip4_str, ip4addr_ntoa(&(ethconfig.connect.ip4)), IP4_ADDR_STR_SIZE);
 
     header_plus_data = create_http_request(request);
@@ -791,7 +795,9 @@ static wui_err buddy_http_client_req(httpc_req_t *request) {
 
 void buddy_httpc_handler() {
 
-    load_eth_params(ETHVAR_MSK(ETHVAR_CONNECT_IP4));
+    ETH_config_t ethconfig;
+    ethconfig.var_mask = ETHVAR_MSK(ETHVAR_CONNECT_IP4);
+    load_eth_params(&ethconfig);
     if (ethconfig.connect.ip4.addr == 0) {
         return;
     }

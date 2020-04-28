@@ -73,7 +73,9 @@ void Error_Handler(void);
 
 void netif_link_callback(struct netif *eth) {
     ethernetif_update_config(eth);
-    load_eth_params(ETHVAR_LAN_FLAGS);
+    ETH_config_t ethconfig;
+    ethconfig.var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS);
+    load_eth_params(&ethconfig);
     if (netif_is_link_up(eth)) {
         if (IS_LAN_ON(ethconfig.lan.flag)) {
             netif_set_up(eth);
@@ -84,7 +86,9 @@ void netif_link_callback(struct netif *eth) {
 }
 
 void netif_status_callback(struct netif *eth) {
-    load_eth_params(ETHVAR_LAN_FLAGS);
+    ETH_config_t ethconfig;
+    ethconfig.var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS);
+    load_eth_params(&ethconfig);
     if (netif_is_up(eth)) {
         if (IS_LAN_DHCP(ethconfig.lan.flag)) {
             dhcp_start(eth);
@@ -115,7 +119,9 @@ void MX_LWIP_Init(void) {
     netif_set_default(&eth0);
 
     /* Load all eth configuration values stored in non-volatile memory unit */
-    load_eth_params(ETHVAR_EEPROM_CONFIG);
+    ETH_config_t ethconfig;
+    ethconfig.var_mask = ETHVAR_STATIC_LAN_ADDRS | ETHVAR_MSK(ETHVAR_LAN_FLAGS) | ETHVAR_MSK(ETHVAR_HOSTNAME);
+    load_eth_params(&ethconfig);
     eth0.hostname = ethconfig.hostname;
     /* This won't execute until user loads static lan settings at least once (default is DHCP) */
     if (IS_LAN_STATIC(ethconfig.lan.flag)) {

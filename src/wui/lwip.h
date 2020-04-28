@@ -84,6 +84,7 @@ extern "C" {
 /* Global Variables ---------------------------------------------------------*/
 
 #define BUDDY_ENABLE_CONNECT
+extern struct netif eth0;
 extern ETH_HandleTypeDef heth;
 
 /*!****************************************************************************
