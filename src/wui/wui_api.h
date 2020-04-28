@@ -10,7 +10,7 @@
 #define _WUI_API_H_
 
 #include <stdint.h>
-#include "ip_addr.h"
+#include "netif_settings.h"
 
 #define FW_VER_STR_LEN          32          // length of full Firmware version string
 #define MAC_ADDR_STR_LEN        18          // length of mac address string ("MM:MM:MM:SS:SS:SS" + 0)
@@ -18,26 +18,9 @@
 #define UUID_STR_LEN            32          // length of unique identifier string
 #define PRI_STATE_STR_LEN       10          // length of printer state string
 
-#define ETH_HOSTNAME_LEN        20          // ethernet hostname MAX length
-#define CONNECT_TOKEN_LEN       20          // CONNECT security token length
-
-#define LAN_FLAG_ONOFF_POS      (1 << 0)    // position of ONOFF switch in lan.flag
-#define LAN_FLAG_TYPE_POS       (1 << 1)    // position of DHCP/STATIC switch in lan.flag
-
-#define IS_LAN_OFF(flg)         (flg & LAN_FLAG_ONOFF_POS)           // returns true if flag is set to OFF
-#define IS_LAN_ON(flg)          (!IS_LAN_OFF(flg))              // returns true if flag is set to ON
-#define IS_LAN_STATIC(flg)      (flg & LAN_FLAG_TYPE_POS)            // returns true if flag is set to STATIC
-#define IS_LAN_DHCP(flg)        (!IS_LAN_STATIC(flg))           // returns true if flag is set to DHCP
-
-#define CHANGE_LAN_TO_STATIC(flg)   (flg |= LAN_FLAG_TYPE_POS)      // flip lan type flg to STATIC
-#define CHANGE_LAN_TO_DHCP(flg)     (flg &= ~LAN_FLAG_TYPE_POS)     // flip lan type flg to DHCP
-#define TURN_LAN_ON(flg)            (flg &= ~LAN_FLAG_ONOFF_POS)    // flip lan switch flg to ON
-#define TURN_LAN_OFF(flg)           (flg |= LAN_FLAG_ONOFF_POS)     // flip lan switch flg to OFF
-
 #define ETHVAR_MSK(n_id) ((uint32_t)1 << (n_id))
 #define ETHVAR_STATIC_LAN_ADDRS \
     (ETHVAR_MSK(ETHVAR_LAN_ADDR_IP4) | ETHVAR_MSK(ETHVAR_LAN_MSK_IP4) | ETHVAR_MSK(ETHVAR_LAN_GW_IP4))
-
 
 #define ETHVAR_EEPROM_CONFIG \
     (ETHVAR_STATIC_LAN_ADDRS | ETHVAR_MSK(ETHVAR_LAN_FLAGS) | ETHVAR_MSK(ETHVAR_HOSTNAME) | ETHVAR_MSK(ETHVAR_CONNECT_IP4) | ETHVAR_MSK(ETHVAR_CONNECT_TOKEN))
@@ -56,31 +39,6 @@ typedef enum {
     ETHVAR_CONNECT_IP4,     // ip4_addr_t, connect.ip4
 } ETHVAR_t;
 
-typedef enum {
-    ETH_UNLINKED,       // ETH cabel is unlinked
-    ETH_NETIF_DOWN,     // ETH interface is DOWN
-    ETH_NETIF_UP,       // ETH interface is UP
-} ETH_STATUS_t;
-
-typedef struct {
-    char token[CONNECT_TOKEN_LEN + 1];  // security token: 20 chars
-    ip4_addr_t ip4;                     // user defined CONNECT ip4
-} connect_t; 
-
-typedef struct {
-    uint8_t flag;                       // lan flags: pos0 = switch(ON=0, OFF=1), pos1 = type(DHCP=0, STATIC=1)
-    ip4_addr_t addr_ip4;                // user defined static ip4 address
-    ip4_addr_t msk_ip4;                 // user defined ip4 netmask
-    ip4_addr_t gw_ip4;                  // user define ip4 default gateway
-} lan_t;
-
-typedef struct {
-    char hostname[ETH_HOSTNAME_LEN + 1];    // ETH hostname: MAX 20 chars
-    connect_t connect;                      // user defined CONNECT configurations
-    lan_t lan;                              // user defined CONNECT configurations
-    uint32_t var_mask;                      // mask for setting ethvars
-} ETH_config_t;
-
 typedef struct {
     uint8_t printer_type;                  // Printer type (defined in CMakeLists.txt)
     uint8_t printer_version;               // Printer varsion (Stored in FLASH)
@@ -91,31 +49,27 @@ typedef struct {
     char printer_state[PRI_STATE_STR_LEN]; // state of the printer, have to be set in wui
 } printer_info_t;
 
-extern ETH_config_t ethconfig;          // configurations of the network
-extern ETH_config_t tmp_ethconfig;      // temporary configuration for loading
-extern struct netif eth0;               // network interface for ETH
-
 /*!****************************************************************************
 * \brief saves the Ethernet specific parameters to non-volatile memory
 *
-* \param [in] mask of parameters to set from static ethconfig to non-volatile memory
+* \param [in] ETH_config storage for parameters to set from static ethconfig to non-volatile memory
 *
 * \return   uint32_t    error value
 *
 * \retval   0 if successful
 *****************************************************************************/
-uint32_t save_eth_params(uint32_t mask);
+uint32_t save_eth_params(ETH_config_t *ethconfig);
 
 /*!****************************************************************************
 * \brief loads the Ethernet specific parameters from non-volatile memory
 *
-* \param [out] mask of parameters to get from memory to static ethconfig structure
+* \param [out] ETH_config storage for parameters to get from memory to static ethconfig structure
 *
 * \return   uint32_t    error value
 *
 * \retval   0 if successful
 *****************************************************************************/
-uint32_t load_eth_params(uint32_t mask);
+uint32_t load_eth_params(ETH_config_t *ethconfig);
 
 /*!****************************************************************************
 * \brief load from ini file Ethernet specific parameters
@@ -146,83 +100,38 @@ void parse_MAC_address(char * dest);
 * \brief Parses all vital eth information in destination string according to ini file format
 *
 * \param [out] destination string
+* \param [in] config - storage for ethernet configurations
 *******************************************************************************************/
-void stringify_eth_for_ini(char * dest);
+void stringify_eth_for_ini(char * dest, ETH_config_t *config);
 /*!*****************************************************************************************
 * \brief Parses all vital eth information in destination string according to screen format
 *
 * \param [out] destination string
+* \param [in] config - storage for ethernet configurations
 *******************************************************************************************/
-void stringify_eth_for_screen(char * dest);
+void stringify_eth_for_screen(char * dest, ETH_config_t *config);
 
-/*!****************************************************************************
-* \brief Sets network interface of LAN to DHCP server aquiring of ip4 addresses
-*****************************************************************************/
-void lan_set_dhcp(void);
-/*!****************************************************************************
-* \brief Sets network interface of LAN to STATIC aquiring of ip4 addresses
-*****************************************************************************/
-void lan_set_static(void);
-/*!****************************************************************************
-* \brief Get pointer to static mac address string
-*
-* \retval static mac address string
-*****************************************************************************/
-char * mac_addr_str(void);
-/*!****************************************************************************
-* \brief Get pointer to static ip4 address string
-*
-* \retval static ip4 address string
-*****************************************************************************/
-const char * addr_ip4_str(void);
-/*!****************************************************************************
-* \brief Get pointer to static netmask ip4 string
-*
-* \retval static ip4 string
-*****************************************************************************/
-const char * msk_ip4_str(void);
-/*!****************************************************************************
-* \brief Get pointer to static default gateway ip4 string
-*
-* \retval static ip4 string
-*****************************************************************************/
-const char * gw_ip4_str(void);
-/*!****************************************************************************
-* \brief Get pointer to static connect ip4 string
-*
-* \retval static ip4 string
-*****************************************************************************/
-const char * connect_ip4_str(void);
-/*!****************************************************************************
-* \brief Turns software switch of LAN netif to OFF
-*****************************************************************************/
-void lan_turn_off(void);
-/*!****************************************************************************
-* \brief Turns software switch of LAN netif to ON
-*****************************************************************************/
-void lan_turn_on(void);
 /*!****************************************************************************
 * \brief Parses MAC address from memory to static string
 *****************************************************************************/
 void parse_MAC_addr(void);
-/*!****************************************************************************
-* \brief Returns the status of ethernet link/netif
-*
-* \return ETH_STATUS_t enum for possible cases (unlinked, netif down, netif up)
-*****************************************************************************/
-ETH_STATUS_t eth_status(void);
+
 /*!****************************************************************************
 * \brief Sets up network interface according to loaded configuration values
+*
+* \param    [in] config - storage for loaded ethernet configurations
 *
 * \return   uint32_t    error value
 *
 * \retval   0 if successful
 *****************************************************************************/
-uint32_t set_loaded_eth_params(void);
+uint32_t set_loaded_eth_params(ETH_config_t * config);
 /*!******************************************************************************************
 * \brief Updates ethernet addresses and their static strings according to ethconfig structure
+*
+* \param    [out] config - storage for loaded ethernet configurations
 ********************************************************************************************/
-void update_eth_addrs(void);
+void update_eth_addrs(ETH_config_t *config);
 
 #ifdef __cplusplus
 }

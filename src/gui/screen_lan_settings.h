@@ -11,52 +11,8 @@
 #include "gui.h"
 #include "config.h"
 #include "screen_menu.h"
-#include "lwip/netif.h"
-#include "eeprom.h"
-#include "lwip.h"
 
 #define plsd              ((screen_lan_settings_data_t *)screen->pdata)
-#define MAC_ADDR_STR_SIZE 18
-
-typedef enum{
-    NETVAR_LAN_FLAGS,
-    NETVAR_HOSTNAME,
-    NETVAR_CONNECT_TOKEN,
-    NETVAR_LAN_IP4_ADDR,
-    NETVAR_LAN_IP4_MSK,
-    NETVAR_LAN_IP4_GW,
-    NETVAR_DNS1,
-    NETVAR_DNS2,
-    NETVAR_CONNECT_IP4,
-} NETVAR_t;
-#define NETVAR_MSK(n_id) ((uint16_t)1 << (n_id))
-#define NETVAR_STATIC_LAN_ADDRS \
-    (NETVAR_MSK(NETVAR_LAN_IP4_ADDR) | NETVAR_MSK(NETVAR_LAN_IP4_MSK) | NETVAR_MSK(NETVAR_LAN_IP4_GW))
-
-typedef struct {
-    window_frame_t root;
-    window_header_t header;
-    window_menu_t menu;
-    menu_item_t *items;
-
-    window_text_t text;
-    char mac_addr_str[MAC_ADDR_STR_SIZE];
-} screen_lan_settings_data_t;
-
-typedef struct {
-    uint8_t lan_flag;
-    char hostname[ETH_HOSTNAME_LEN + 1];
-#ifdef BUDDY_ENABLE_CONNECT
-    char connect_token[CONNECT_TOKEN_LEN + 1];
-    ip4_addr_t connect_ip4;
-#endif // BUDDY_ENABLE_CONNECT
-    ip4_addr_t lan_ip4_addr;
-    ip4_addr_t lan_ip4_msk;
-    ip4_addr_t lan_ip4_gw;
-    uint16_t set_flag;
-    ip4_addr_t dns1_ip4;
-    ip4_addr_t dns2_ip4;
-} networkconfig_t;
 
 extern screen_t screen_lan_settings;
 extern screen_t *const pscreen_lan_settings;
