@@ -9,10 +9,6 @@
 #include "window_header.h"
 #include "config.h"
 #include "marlin_client.h"
-#ifdef BUDDY_ENABLE_ETHERNET
-    #include "lwip/netif.h"
-    #include "lwip/dhcp.h"
-#endif //BUDDY_ENABLE_ETHERNET
 #include "eeprom.h"
 
 extern bool media_is_inserted();
@@ -27,6 +23,7 @@ void window_frame_draw(window_frame_t *window);
 int16_t WINDOW_CLS_HEADER = 0;
 
 static void update_ETH_icon(bool link_up, window_header_t *window) {
+#ifdef WUI_LIB_FIXED
     if (link_up) {
         if (eeprom_get_var(EEVAR_LAN_FLAG).ui8 & LAN_EEFLG_TYPE) {
             if (netif_is_up(&eth0)) {
@@ -44,6 +41,7 @@ static void update_ETH_icon(bool link_up, window_header_t *window) {
     } else {
         p_window_header_icon_off(window, HEADER_ICON_LAN);
     }
+#endif
 }
 
 void window_header_init(window_header_t *window) {
@@ -61,9 +59,11 @@ void window_header_init(window_header_t *window) {
     if (media_is_inserted()) {
         window->icons[HEADER_ICON_USB] = HEADER_ISTATE_ACTIVE;
     }
-#ifdef BUDDY_ENABLE_ETHERNET
+#ifdef WUI_LIB_FIXED
+    #ifdef BUDDY_ENABLE_ETHERNET
     update_ETH_icon(netif_is_link_up(&eth0), window);
-#endif //BUDDY_ENABLE_ETHERNET
+    #endif //BUDDY_ENABLE_ETHERNET
+#endif
 }
 
 void window_header_done(window_header_t *window) {}
@@ -164,9 +164,11 @@ void p_window_header_set_text(window_header_t *window, const char *text) {
 
 int p_window_header_event_clr(window_header_t *window, MARLIN_EVT_t evt_id) {
     /* lwip fces only read states, invalid states by another thread never mind */
-#ifdef BUDDY_ENABLE_ETHERNET
+#ifdef WUI_LIB_FIXED
+    #ifdef BUDDY_ENABLE_ETHERNET
     update_ETH_icon(netif_is_link_up(&eth0), window);
-#endif //BUDDY_ENABLE_ETHERNET
+    #endif //BUDDY_ENABLE_ETHERNET
+#endif
     if (marlin_event_clr(evt_id)) {
         switch (evt_id) {
         case MARLIN_EVT_MediaInserted:

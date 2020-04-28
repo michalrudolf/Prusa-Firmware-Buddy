@@ -219,24 +219,6 @@ target_include_directories(FreeRTOS_Config INTERFACE include/freertos)
 target_link_libraries(FreeRTOS_Config INTERFACE STM32::CPU)
 
 #
-# Configure LwIP
-#
-
-add_library(LwIP_Config INTERFACE)
-target_link_libraries(LwIP_Config INTERFACE A3idesHeaders)
-
-#
-# Configure WUI
-#
-
-if(WUI)
-  add_library(WUI_Config INTERFACE)
-  target_include_directories(WUI_Config INTERFACE src/common src/gui src/guiapi/include)
-  target_compile_definitions(WUI_Config INTERFACE -DHTTPD_FSDATA_FILE="fsdata_wui_local.c")
-  target_link_libraries(WUI_Config INTERFACE A3idesHeaders QR)
-endif()
-
-#
 # Configure FatFs
 #
 
@@ -403,7 +385,6 @@ target_link_libraries(
           Arduino::Core
           Arduino::TMCStepper
           Arduino::LiquidCrystal
-          LwIP
           FatFs
           lpng
           STM32::USBHost
@@ -479,7 +460,6 @@ target_sources(
           src/common/client_response.cpp
           src/common/crc32.c
           src/common/ini_handler.c
-          src/common/wui_api.c
           $<$<STREQUAL:${PRINTER},MINI>:src/common/minda_broken_cable_detection.c>
           $<$<STREQUAL:${PRINTER},MINI>:src/common/MindaRedscreen.c>
           src/marlin_stubs/M876.cpp
@@ -492,6 +472,8 @@ target_sources(
           src/gui/guimain.c
           src/gui/filament.cpp
   )
+# specify the HTTP server files
+target_compile_definitions(firmware PRIVATE -DHTTPD_FSDATA_FILE="fsdata_wui_local.c")
 
 if(GUI)
   target_sources(
