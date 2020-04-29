@@ -17,6 +17,7 @@
 #define SER_NUM_STR_LEN         16          // length of serial number string
 #define UUID_STR_LEN            32          // length of unique identifier string
 #define PRI_STATE_STR_LEN       10          // length of printer state string
+#define IP4_ADDR_STR_SIZE       16          // length of ip4 address string ((0-255).(0-255).(0-255).(0-255))
 
 #define ETHVAR_MSK(n_id) ((uint32_t)1 << (n_id))
 #define ETHVAR_STATIC_LAN_ADDRS \

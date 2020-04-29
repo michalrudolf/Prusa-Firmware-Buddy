@@ -14,9 +14,9 @@
 #include "eeprom.h"
 #include "string.h"
 
-#define PRINTER_TYPE_ADDR    0x0802002F // 1 B
-#define PRINTER_VERSION_ADDR 0x08020030 // 1 B
-#define IP4_ADDR_STR_SIZE   16
+#define MAX_UINT16              65535
+#define PRINTER_TYPE_ADDR       0x0802002F // 1 B
+#define PRINTER_VERSION_ADDR    0x08020030 // 1 B
 
 static int ini_handler_func(void *user, const char *section, const char *name, const char *value) {
 
@@ -56,8 +56,11 @@ static int ini_handler_func(void *user, const char *section, const char *name, c
         strlcpy(tmp_config->connect.token, value, CONNECT_TOKEN_LEN + 1);
         tmp_config->var_mask |= ETHVAR_MSK(ETHVAR_CONNECT_TOKEN);
     } else if (MATCH("connect", "port")) {
-        strlcpy(tmp_config->connect.token, value, CONNECT_TOKEN_LEN + 1);
-        tmp_config->var_mask |= ETHVAR_MSK(ETHVAR_CONNECT_TOKEN);
+        int32_t tmp = atoi(value);
+        if (tmp >= 0 && tmp <= MAX_UINT16){
+            tmp_config->connect.port = (uint16_t)tmp;
+            tmp_config->var_mask |= ETHVAR_MSK(ETHVAR_CONNECT_TOKEN);
+        }
     } else {
         return 0; /* unknown section/name, error */
     }
@@ -103,6 +106,9 @@ uint32_t save_eth_params(ETH_config_t * ethconfig) {
     if (ethconfig->var_mask & ETHVAR_MSK(ETHVAR_CONNECT_IP4)) {
         eeprom_set_var(EEVAR_CONNECT_IP4, variant8_ui32(ethconfig->connect.ip4.addr));
     }
+    if (ethconfig->var_mask & ETHVAR_MSK(ETHVAR_CONNECT_PORT)) {
+        eeprom_set_var(EEVAR_CONNECT_PORT, variant8_ui16(ethconfig->connect.port));
+    }
 
     return 0;
 }
@@ -133,6 +139,9 @@ uint32_t load_eth_params(ETH_config_t *ethconfig) {
     }
     if (ethconfig->var_mask & ETHVAR_MSK(ETHVAR_CONNECT_IP4)) {
         ethconfig->connect.ip4.addr = eeprom_get_var(EEVAR_CONNECT_IP4).ui32;
+    }
+    if (ethconfig->var_mask & ETHVAR_MSK(ETHVAR_CONNECT_PORT)) {
+        ethconfig->connect.port = eeprom_get_var(EEVAR_CONNECT_PORT).ui16;
     }
 
     return 0;
