@@ -34,7 +34,6 @@ static int ini_handler_func(void *user, const char *section, const char *name, c
         }
     } else if (MATCH("lan_ip4", "hostname")) {
         strlcpy(tmp_config->hostname, value, ETH_HOSTNAME_LEN + 1);
-        tmp_config->hostname[ETH_HOSTNAME_LEN] = '\0';
         tmp_config->var_mask |= ETHVAR_MSK(ETHVAR_HOSTNAME);
     } else if (MATCH("lan_ip4", "address")) {
         if (ip4addr_aton(value, &tmp_config->lan.addr_ip4)) {
@@ -64,8 +63,11 @@ static int ini_handler_func(void *user, const char *section, const char *name, c
 static ini_handler wui_ini_handler = ini_handler_func;
 
 uint32_t load_ini_params(ETH_config_t * config) {
+    config->var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS);
+    load_eth_params(config);
     config->var_mask = 0;
-    if(ini_load_file(wui_ini_handler, &config)){
+
+    if(ini_load_file(wui_ini_handler, config)){
         return set_loaded_eth_params(config);
     } else {
         return 0;
@@ -212,18 +214,18 @@ uint32_t set_loaded_eth_params(ETH_config_t * config){
     }
 
     // ugly way to aquire lan flags before load
-    uint8_t swaper, tmp_lan_flag = config->lan.flag;
+    uint8_t swaper, prev_lan_flag = config->lan.flag;
     uint32_t set_mask = config->var_mask;
     config->var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS);
     load_eth_params(config);
-    swaper = tmp_lan_flag;
-    tmp_lan_flag = config->lan.flag;
+    swaper = prev_lan_flag;
+    prev_lan_flag = config->lan.flag;
     config->lan.flag = swaper;
     config->var_mask = set_mask;
 
     if (config->var_mask & ETHVAR_MSK(ETHVAR_LAN_FLAGS)) {
         // if there was a change from STATIC to DHCP
-        if (IS_LAN_STATIC(tmp_lan_flag) && IS_LAN_DHCP(config->lan.flag)) {
+        if (IS_LAN_STATIC(prev_lan_flag) && IS_LAN_DHCP(config->lan.flag)) {
             set_LAN_to_dhcp(config);
         // or STATIC to STATIC
         } else if (IS_LAN_STATIC(config->lan.flag)){
