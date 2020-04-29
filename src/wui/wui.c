@@ -100,9 +100,10 @@ void StartWebServerTask(void const *argument) {
     marlin_client_set_event_notify(MARLIN_EVT_MSK_DEF - MARLIN_EVT_MSK_FSM);
     marlin_client_set_change_notify(MARLIN_VAR_MSK_DEF | MARLIN_VAR_MSK_WUI);
     // get settings from ini file
-    ETH_config_t eth_params_t;
-    load_ini_params(&eth_params_t);
-    save_eth_params(&eth_params_t);
+    ETH_config_t config;
+    if(load_ini_params(&config)){
+        set_loaded_eth_params(&config);
+    }
     // LwIP related initalizations
     MX_LWIP_Init();
     http_server_init();

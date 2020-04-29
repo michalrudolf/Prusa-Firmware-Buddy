@@ -1,8 +1,5 @@
-if(NOT TARGET WUI_Config)
-  message(FATAL_ERROR "Target WUI_Config does not exist.")
-endif()
-
 add_library(WUI INTERFACE)
+
 target_sources(WUI INTERFACE
   wui.c
   wui_REST_api.c
@@ -12,10 +9,10 @@ target_sources(WUI INTERFACE
   http/fs.c
   http/http_client.c
   http/httpd.c
-  resources/${HTTPD_FSDATA_FILE}
   progress_data_wrapper.cpp
   lwip.c
   ethernetif.c
+  netif_settings.c
 )
 
 target_include_directories(
@@ -31,5 +28,4 @@ target_link_libraries(
   INTERFACE LwIP
             jsmn::jsmn
             Marlin
-            WUI_Config
   )

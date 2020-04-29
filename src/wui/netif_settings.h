@@ -1,19 +1,7 @@
-/*
- * ethvars.h
- * \brief   structures, enums and defines needed for ETH manupulation
- *
- *  Created on: April 24, 2020
- *      Author: Migi <michal.rudolf[at]prusa3d.cz>
- */
+#ifndef NETIF_SETTINGS_H
+#define NETIF_SETTINGS_H
 
-#ifndef ETHVARS_H
-#define ETHVARS_H
-
-#include <stdint.h>
 #include "ip_addr.h"
-
-#define ETH_HOSTNAME_LEN        20          // ethernet hostname MAX length
-#define CONNECT_TOKEN_LEN       20          // CONNECT security token length
 
 #define LAN_FLAG_ONOFF_POS      (1 << 0)    // position of ONOFF switch in lan.flag
 #define LAN_FLAG_TYPE_POS       (1 << 1)    // position of DHCP/STATIC switch in lan.flag
@@ -28,23 +16,8 @@
 #define TURN_LAN_ON(flg)            (flg &= ~LAN_FLAG_ONOFF_POS)    // flip lan switch flg to ON
 #define TURN_LAN_OFF(flg)           (flg |= LAN_FLAG_ONOFF_POS)     // flip lan switch flg to OFF
 
-#define ETHVAR_MSK(n_id) ((uint16_t)1 << (n_id))
-#define ETHVAR_STATIC_LAN_ADDRS \
-    (ETHVAR_MSK(ETHVAR_LAN_ADDR_IP4) | ETHVAR_MSK(ETHVAR_LAN_MSK_IP4) | ETHVAR_MSK(ETHVAR_LAN_GW_IP4))
-
-
-#define ETHVAR_EEPROM_CONFIG \
-    (ETHVAR_STATIC_LAN_ADDRS | ETHVAR_MSK(ETHVAR_LAN_FLAGS) | ETHVAR_MSK(ETHVAR_HOSTNAME) | ETHVAR_MSK(ETHVAR_CONNECT_IP4) | ETHVAR_MSK(ETHVAR_CONNECT_TOKEN))
-
-typedef enum {
-    ETHVAR_LAN_FLAGS,       // uint8_t, lan.flag
-    ETHVAR_HOSTNAME,        // char[20 + 1], hostname
-    ETHVAR_CONNECT_TOKEN,   // char[20 + 1], connect.token
-    ETHVAR_LAN_ADDR_IP4,    // ip4_addr_t, lan.addr_ip4
-    ETHVAR_LAN_MSK_IP4,     // ip4_addr_t, lan.msk_ip4
-    ETHVAR_LAN_GW_IP4,      // ip4_addr_t, lan.gw_ip4
-    ETHVAR_CONNECT_IP4,     // ip4_addr_t, connect.ip4
-} ETHVAR_t;
+#define ETH_HOSTNAME_LEN        20          // ethernet hostname MAX length
+#define CONNECT_TOKEN_LEN       20          // CONNECT security token length
 
 typedef enum {
     ETH_UNLINKED,       // ETH cabel is unlinked
@@ -68,7 +41,8 @@ typedef struct {
     char hostname[ETH_HOSTNAME_LEN + 1];    // ETH hostname: MAX 20 chars
     connect_t connect;                      // user defined CONNECT configurations
     lan_t lan;                              // user defined CONNECT configurations
-    uint16_t var_mask;                      // mask for setting ethvars
+    uint32_t var_mask;                      // mask for setting ethvars
 } ETH_config_t;
 
-#endif //ETHVARS_H
+extern char eth_hostname[ETH_HOSTNAME_LEN + 1];     // static string storing ethernet hostname
+#endif //NETIF_SETTINGS_H
