@@ -78,7 +78,7 @@ void get_telemetry_for_connect(char *data, const uint32_t buf_len) {
                             "\"print_dur\":\"%s\"," // OctoPrint API ?
                             "\"time_est\":\"%s\","
                             "\"printing_time\":%ld," // Connect
-                            "\"estimated_time\":%ld,"
+                            "\"estimated_time\":%u,"
                             "\"project_name\":\"%s\","
                             "\"state\":\"PRINTING\""
                             "}",
@@ -108,8 +108,8 @@ void get_telemetry_for_local(char *data, const uint32_t buf_len) {
 
     if (!wui_vars_copy.sd_printing) {
         snprintf(data, buf_len, "{"
-                                "\"temp_nozzle\":%ld,"
-                                "\"temp_bed\":%ld,"
+                                "\"temp_nozzle\":%d,"
+                                "\"temp_bed\":%d,"
                                 "\"material\":\"%s\","
                                 "\"pos_z_mm\":%.2f,"
                                 "\"printing_speed\":%d,"
