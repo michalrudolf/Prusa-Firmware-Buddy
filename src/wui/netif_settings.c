@@ -61,10 +61,13 @@ void set_LAN_to_static(ETH_config_t *config) {
         netifapi_netif_set_down(&eth0);
     }
     CHANGE_LAN_TO_STATIC(config->lan.flag);
+    ipaddr.addr = config->lan.addr_ip4.addr;
+    netmask.addr = config->lan.msk_ip4.addr;
+    gw.addr = config->lan.gw_ip4.addr;
     netifapi_netif_set_addr(&eth0,
-        (const ip4_addr_t *)&(config->lan.addr_ip4),
-        (const ip4_addr_t *)&(config->lan.msk_ip4),
-        (const ip4_addr_t *)&(config->lan.gw_ip4)
+        (const ip4_addr_t *)&ipaddr,
+        (const ip4_addr_t *)&netmask,
+        (const ip4_addr_t *)&gw
         );
     if (netif_is_link_up(&eth0) && IS_LAN_ON(config->lan.flag)) {
         netifapi_netif_set_up(&eth0);

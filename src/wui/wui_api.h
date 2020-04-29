@@ -125,7 +125,7 @@ void parse_MAC_addr(void);
 *
 * \return   uint32_t    error value
 *
-* \retval   0 if successful
+* \retval   1 if successful
 *****************************************************************************/
 uint32_t set_loaded_eth_params(ETH_config_t * config);
 /*!******************************************************************************************

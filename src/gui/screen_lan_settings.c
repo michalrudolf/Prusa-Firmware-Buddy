@@ -109,7 +109,7 @@ static int screen_lan_settings_event(screen_t *screen, window_t *window,
         ETH_config_t ethconfig;
         ethconfig.var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS);
         load_eth_params(&ethconfig);
-        if (IS_LAN_DHCP(ethconfig.lan.flag) || dhcp_addrs_are_supplied()) {
+        if ((IS_LAN_DHCP(ethconfig.lan.flag) && dhcp_addrs_are_supplied()) || IS_LAN_STATIC(ethconfig.lan.flag)) {
             conn_flg = false;
             refresh_addresses(screen);
         }
@@ -135,7 +135,9 @@ static int screen_lan_settings_event(screen_t *screen, window_t *window,
             turn_on_LAN(&ethconfig);
             save_eth_params(&ethconfig);
             refresh_addresses(screen);
-            conn_flg = true;
+            if (IS_LAN_DHCP(ethconfig.lan.flag)) {
+                conn_flg = true;
+            }
         }
         break;
     }
@@ -152,9 +154,10 @@ static int screen_lan_settings_event(screen_t *screen, window_t *window,
                 }
                 return 0;
             }
-            ethconfig.var_mask |= ETHVAR_STATIC_LAN_ADDRS;
+            ethconfig.var_mask = ETHVAR_STATIC_LAN_ADDRS;
             load_eth_params(&ethconfig);
             set_LAN_to_static(&ethconfig);
+            ethconfig.var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS);
             save_eth_params(&ethconfig);
             stringify_eth_for_screen(plan_str, &ethconfig);
             plsd->text.text = plan_str;
@@ -165,9 +168,7 @@ static int screen_lan_settings_event(screen_t *screen, window_t *window,
             ethconfig.var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS);
             save_eth_params(&ethconfig);
             refresh_addresses(screen);
-            if (IS_LAN_DHCP(ethconfig.lan.flag)) {
-                conn_flg = true;
-            }
+            conn_flg = true;
         }
         break;
     }

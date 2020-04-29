@@ -66,8 +66,7 @@ static ini_handler wui_ini_handler = ini_handler_func;
 uint32_t load_ini_params(ETH_config_t * config) {
     config->var_mask = 0;
     if(ini_load_file(wui_ini_handler, &config)){
-        save_eth_params(config);
-        return 1;
+        return set_loaded_eth_params(config);
     } else {
         return 0;
     }
@@ -76,7 +75,7 @@ uint32_t load_ini_params(ETH_config_t * config) {
 uint32_t save_eth_params(ETH_config_t * ethconfig) {
 
     if (ethconfig->var_mask & ETHVAR_MSK(ETHVAR_LAN_FLAGS)) {
-        eeprom_set_var(EEVAR_LAN_FLAG, variant8_ui16(ethconfig->lan.flag));
+        eeprom_set_var(EEVAR_LAN_FLAG, variant8_ui8(ethconfig->lan.flag));
     }
     if (ethconfig->var_mask & ETHVAR_MSK(ETHVAR_LAN_ADDR_IP4)) {
         eeprom_set_var(EEVAR_LAN_IP4_ADDR, variant8_ui32(ethconfig->lan.addr_ip4.addr));
@@ -204,7 +203,7 @@ uint32_t set_loaded_eth_params(ETH_config_t * config){
         // if lan type is set to STATIC
         if (IS_LAN_STATIC(config->lan.flag)){
             if ((config->var_mask & ETHVAR_STATIC_LAN_ADDRS) != ETHVAR_STATIC_LAN_ADDRS) {
-                return 1;
+                return 0;
             }
         }
     }
@@ -235,5 +234,5 @@ uint32_t set_loaded_eth_params(ETH_config_t * config){
 
     save_eth_params(config);
 
-    return 0;
+    return 1;
 }
