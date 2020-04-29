@@ -14,6 +14,15 @@
 
 #define plsd              ((screen_lan_settings_data_t *)screen->pdata)
 
+typedef struct {	
+    window_frame_t root;	
+    window_header_t header;	
+    window_menu_t menu;	
+    menu_item_t *items;	
+
+    window_text_t text;	
+} screen_lan_settings_data_t;
+
 extern screen_t screen_lan_settings;
 extern screen_t *const pscreen_lan_settings;
 

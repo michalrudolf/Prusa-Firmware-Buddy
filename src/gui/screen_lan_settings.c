@@ -109,7 +109,7 @@ static int screen_lan_settings_event(screen_t *screen, window_t *window,
         ETH_config_t ethconfig;
         ethconfig.var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS);
         load_eth_params(&ethconfig);
-        if (IS_LAN_DHCP(ethconfig.lan.flag) || dhcp_supplied_are_address()) {
+        if (IS_LAN_DHCP(ethconfig.lan.flag) || dhcp_addrs_are_supplied()) {
             conn_flg = false;
             refresh_addresses(screen);
         }
@@ -128,11 +128,11 @@ static int screen_lan_settings_event(screen_t *screen, window_t *window,
         ethconfig.var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS);
         load_eth_params(&ethconfig);
         if (IS_LAN_ON(ethconfig.lan.flag)) {
-            turn_LAN_off(&ethconfig);
+            turn_off_LAN(&ethconfig);
             save_eth_params(&ethconfig);
             refresh_addresses(screen);
         } else {
-            turn_LAN_on(&ethconfig);
+            turn_on_LAN(&ethconfig);
             save_eth_params(&ethconfig);
             refresh_addresses(screen);
             conn_flg = true;
@@ -198,9 +198,10 @@ static int screen_lan_settings_event(screen_t *screen, window_t *window,
                 == MSGBOX_RES_OK) {
             }
         } else {
-            if (load_ini_params()) {
+            ETH_config_t ethconfig;
+            if (load_ini_params(&ethconfig)) {
                 if (gui_msgbox("Settings successfully loaded", MSGBOX_BTN_OK | MSGBOX_ICO_INFO) == MSGBOX_RES_OK) {
-                    ETH_config_t ethconfig;
+                    
                     ethconfig.var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS);
                     load_eth_params(&ethconfig);
                     plsd->items[MI_TYPE].item.wi_switch_select.index = IS_LAN_STATIC(ethconfig.lan.flag) ? 1 : 0;

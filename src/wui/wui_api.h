@@ -74,11 +74,13 @@ uint32_t load_eth_params(ETH_config_t *ethconfig);
 /*!****************************************************************************
 * \brief load from ini file Ethernet specific parameters
 *
+* \param    [out] config - storage for loaded ethernet configurations
+*
 * \return   uint32_t    error value
 *
 * \retval   1 if successful
 *****************************************************************************/
-uint32_t load_ini_params(void);
+uint32_t load_ini_params(ETH_config_t * config);
 
 /*!****************************************************************************
 * \brief access user defined addresses in memory and aquire vital printer info

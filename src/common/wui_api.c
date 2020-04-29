@@ -63,11 +63,10 @@ static int ini_handler_func(void *user, const char *section, const char *name, c
 
 static ini_handler wui_ini_handler = ini_handler_func;
 
-uint32_t load_ini_params(void) {
-    ETH_config_t config;
-    config.var_mask = 0;
+uint32_t load_ini_params(ETH_config_t * config) {
+    config->var_mask = 0;
     if(ini_load_file(wui_ini_handler, &config)){
-        save_eth_params(&config);
+        save_eth_params(config);
         return 1;
     } else {
         return 0;
@@ -170,7 +169,7 @@ void stringify_eth_for_ini(char * dest, ETH_config_t *config) {
 
     snprintf(dest, MAX_INI_SIZE,
         "[lan_ip4]\ntype=%s\nhostname=%s\naddress=%s\nmask=%s\ngateway=%s\n\n[connect]\naddress=%s\ntoken=%s\n",
-        IS_LAN_STATIC(config.lan.flag) ? "STATIC" : "DHCP", config->hostname,
+        IS_LAN_STATIC(config->lan.flag) ? "STATIC" : "DHCP", config->hostname,
         addr, msk, gw, connect, config->connect.token);
 }
 
@@ -228,7 +227,7 @@ uint32_t set_loaded_eth_params(ETH_config_t * config){
         if (IS_LAN_STATIC(tmp_lan_flag) && IS_LAN_DHCP(config->lan.flag)) {
             set_LAN_to_dhcp(config);
         // or STATIC to STATIC
-        } else if (IS_LAN_STATIC(ethconfig.lan.flag)){
+        } else if (IS_LAN_STATIC(config->lan.flag)){
             set_LAN_to_static(config);
         }
         // from DHCP to DHCP: do nothing
