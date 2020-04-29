@@ -55,6 +55,9 @@ static int ini_handler_func(void *user, const char *section, const char *name, c
     } else if (MATCH("connect", "token")) {
         strlcpy(tmp_config->connect.token, value, CONNECT_TOKEN_LEN + 1);
         tmp_config->var_mask |= ETHVAR_MSK(ETHVAR_CONNECT_TOKEN);
+    } else if (MATCH("connect", "port")) {
+        strlcpy(tmp_config->connect.token, value, CONNECT_TOKEN_LEN + 1);
+        tmp_config->var_mask |= ETHVAR_MSK(ETHVAR_CONNECT_TOKEN);
     } else {
         return 0; /* unknown section/name, error */
     }
