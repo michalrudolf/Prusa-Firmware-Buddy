@@ -19,8 +19,6 @@
 #include "wui_api.h"
 
 #define CLIENT_CONNECT_DELAY      1000 // 1000 = 1 Sec.
-#define CONNECT_SERVER_PORT       8000
-#define IP4_ADDR_STR_SIZE         16
 #define REQ_HEADER_MAX_SIZE       256
 #define REQ_BODY_MAX_SIZE         512
 #define HTTPC_CONTENT_LEN_INVALID 0xFFFFFFFF
@@ -732,7 +730,7 @@ static wui_err buddy_http_client_req(httpc_req_t *request) {
     const char *header_plus_data;
     ETH_config_t ethconfig;
     
-    ethconfig.var_mask = ETHVAR_MSK(ETHVAR_CONNECT_IP4);
+    ethconfig.var_mask = ETHVAR_MSK(ETHVAR_CONNECT_IP4) | ETHVAR_MSK(ETHVAR_CONNECT_PORT);
     load_eth_params(&ethconfig);
     strlcpy(host_ip4_str, ip4addr_ntoa(&(ethconfig.connect.ip4)), IP4_ADDR_STR_SIZE);
 
@@ -789,7 +787,7 @@ static wui_err buddy_http_client_req(httpc_req_t *request) {
         return ERR_VAL;
     }
 
-    tcp_connect(req->pcb, &(ethconfig.connect.ip4), CONNECT_SERVER_PORT, httpc_tcp_connected);
+    tcp_connect(req->pcb, &(ethconfig.connect.ip4), ethconfig.connect.port, httpc_tcp_connected);
     return ERR_OK;
 }
 

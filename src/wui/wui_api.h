@@ -17,13 +17,14 @@
 #define SER_NUM_STR_LEN         16          // length of serial number string
 #define UUID_STR_LEN            32          // length of unique identifier string
 #define PRI_STATE_STR_LEN       10          // length of printer state string
+#define IP4_ADDR_STR_SIZE       16          // length of ip4 address string ((0-255).(0-255).(0-255).(0-255))
 
 #define ETHVAR_MSK(n_id) ((uint32_t)1 << (n_id))
 #define ETHVAR_STATIC_LAN_ADDRS \
     (ETHVAR_MSK(ETHVAR_LAN_ADDR_IP4) | ETHVAR_MSK(ETHVAR_LAN_MSK_IP4) | ETHVAR_MSK(ETHVAR_LAN_GW_IP4))
 
 #define ETHVAR_EEPROM_CONFIG \
-    (ETHVAR_STATIC_LAN_ADDRS | ETHVAR_MSK(ETHVAR_LAN_FLAGS) | ETHVAR_MSK(ETHVAR_HOSTNAME) | ETHVAR_MSK(ETHVAR_CONNECT_IP4) | ETHVAR_MSK(ETHVAR_CONNECT_TOKEN))
+    (ETHVAR_STATIC_LAN_ADDRS | ETHVAR_MSK(ETHVAR_LAN_FLAGS) | ETHVAR_MSK(ETHVAR_HOSTNAME) | ETHVAR_MSK(ETHVAR_CONNECT_IP4) | ETHVAR_MSK(ETHVAR_CONNECT_TOKEN) | ETHVAR_MSK(ETHVAR_CONNECT_PORT))
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,6 +38,7 @@ typedef enum {
     ETHVAR_LAN_MSK_IP4,     // ip4_addr_t, lan.msk_ip4
     ETHVAR_LAN_GW_IP4,      // ip4_addr_t, lan.gw_ip4
     ETHVAR_CONNECT_IP4,     // ip4_addr_t, connect.ip4
+    ETHVAR_CONNECT_PORT,    // unsigned, connect.port (0-65535)
 } ETHVAR_t;
 
 typedef struct {
