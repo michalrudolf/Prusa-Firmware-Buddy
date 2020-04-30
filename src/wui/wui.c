@@ -107,12 +107,7 @@ void StartWebServerTask(void const *argument) {
     MX_LWIP_Init();
     http_server_init();
 
-/* 
-* SNTP here is temporary sollution, because:
-* In LwIP init netif_default is set to eth0, BUT
-* When DHCP is enabled, it supplies addrs after this is called -> first call is from 0.0.0.0
-*/
-    sntp_client_init();
+    bool sntp_not_initialized = true;
 
 #ifdef BUDDY_ENABLE_CONNECT
     buddy_httpc_handler_init();
@@ -126,6 +121,13 @@ void StartWebServerTask(void const *argument) {
         if (wui_marlin_vars) {
             marlin_client_loop();
             update_wui_vars();
+        }
+
+        if (sntp_not_initialized) {
+            if (dhcp_addrs_are_supplied()) {
+                sntp_client_init();
+                sntp_not_initialized = false;
+            }
         }
 
 #ifdef BUDDY_ENABLE_CONNECT

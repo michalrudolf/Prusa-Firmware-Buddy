@@ -116,6 +116,9 @@ uint32_t save_eth_params(ETH_config_t * ethconfig) {
     if (ethconfig->var_mask & ETHVAR_MSK(ETHVAR_CONNECT_PORT)) {
         eeprom_set_var(EEVAR_CONNECT_PORT, variant8_ui16(ethconfig->connect.port));
     }
+    if (ethconfig->var_mask & ETHVAR_MSK(ETHVAR_TIMEZONE)) {
+        eeprom_set_var(EEVAR_TIMEZONE, variant8_i8(ethconfig->timezone));
+    }
 
     return 0;
 }
@@ -149,6 +152,9 @@ uint32_t load_eth_params(ETH_config_t *ethconfig) {
     }
     if (ethconfig->var_mask & ETHVAR_MSK(ETHVAR_CONNECT_PORT)) {
         ethconfig->connect.port = eeprom_get_var(EEVAR_CONNECT_PORT).ui16;
+    }
+    if (ethconfig->var_mask & ETHVAR_MSK(ETHVAR_TIMEZONE)) {
+        ethconfig->timezone = eeprom_get_var(EEVAR_TIMEZONE).i8;
     }
 
     return 0;
@@ -277,19 +283,23 @@ void sntp_get_system_date(char * dest){
 
     HAL_RTC_GetDate(&hrtc, &currDate, RTC_FORMAT_BIN);
 
-    snprintf(dest, 10, "%02d:%02d:%02d", currDate.Date, currDate.Month, currDate.Year);
+    snprintf(dest, 10, "%02d.%02d.%d", currDate.Date, currDate.Month, currDate.Year);
   } else {
     strcpy(dest, "N/A");
   }
 }
 
 void sntp_set_system_time(uint32_t sec)
-{ 
+{
+  ETH_config_t config;
+  config.var_mask = ETHVAR_MSK(ETHVAR_TIMEZONE);
+  load_eth_params(&config);
+
   RTC_TimeTypeDef currTime;
   RTC_DateTypeDef currDate;
 
   struct tm current_time_val;
-  time_t current_time = (time_t)sec;
+  time_t current_time = (time_t)sec + (config.timezone * 3600);
 
   localtime_r(&current_time, &current_time_val);
 
@@ -297,8 +307,8 @@ void sntp_set_system_time(uint32_t sec)
   currTime.Minutes = current_time_val.tm_min;
   currTime.Hours = current_time_val.tm_hour;
   currDate.Date = current_time_val.tm_mday;
-  currDate.Month = current_time_val.tm_mon;
-  currDate.Year = current_time_val.tm_year;
+  currDate.Month = current_time_val.tm_mon + 1;
+  currDate.Year = current_time_val.tm_year + 1900;
   currDate.WeekDay = current_time_val.tm_wday;
 
   HAL_RTC_SetTime(&hrtc, &currTime, RTC_FORMAT_BIN);

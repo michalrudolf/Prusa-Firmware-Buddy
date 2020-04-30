@@ -40,6 +40,7 @@ typedef struct {
 
 typedef struct {
     char hostname[ETH_HOSTNAME_LEN + 1];    // ETH hostname: MAX 20 chars
+    int8_t timezone;                        // user defined difference to UTC
     connect_t connect;                      // user defined CONNECT configurations
     lan_t lan;                              // user defined CONNECT configurations
     uint32_t var_mask;                      // mask for setting ethvars
