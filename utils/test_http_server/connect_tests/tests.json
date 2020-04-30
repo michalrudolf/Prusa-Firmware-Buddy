@@ -2,7 +2,7 @@
     "tests": 
     [
         {
-            "switch": "off",
+            "switch": "on",
             "name": "Low level GCODE",
             "delay": 5,
             "request":
@@ -40,8 +40,16 @@
             }
         }
         ,
+
+
+
+
+
+
+
+        
         {
-            "switch": "off",
+            "switch": "on",
             "name": "Low level GCODEs",
             "delay": 15,
             "request":
@@ -90,12 +98,373 @@
                 }
             }
         }
+        ,
 
 
 
 
 
 
+
+
+        {
+            "switch": "on",
+            "name": "Unexpected Content-Type",
+            "request":
+            {
+                "header":
+                {
+                    "c-type": "elfstina",
+                    "c-id": 1255
+                }
+            ,
+                "body": 
+                {
+                    "type": "low",
+                    "command": "G28 XY"
+                }
+            }
+            ,
+            "result": 
+            {
+                "header": 
+                [
+                    "POST",
+                    "/p/events",
+                    "HTTP/1.0",
+                    "01234567899876543210",
+                    "application/json"
+                ]
+                ,
+                "body":
+                {
+                    "event": "REJECTED",
+                    "reason": "error with Content-Type",
+                    "command_id": 1255
+                }
+            }
+        }
+        ,
+
+
+
+
+
+
+
+
+        {
+            "switch": "on",
+            "name": "Content-length too big (> 512)",
+            "request":
+            {
+                "header":
+                {
+                    "c-type": "text/x.gcode",
+                    "c-length": 513,
+                    "c-id": 1254
+                }
+            ,
+                "body": 
+                {
+                    "type": "low",
+                    "command": "G28 XY"
+                }
+            }
+            ,
+            "result": 
+            {
+                "header": 
+                [
+                    "POST",
+                    "/p/events",
+                    "HTTP/1.0",
+                    "01234567899876543210",
+                    "application/json"
+                ]
+                ,
+                "body":
+                {
+                    "event": "REJECTED",
+                    "reason": "Packet size overflow",
+                    "command_id": 1254
+                }
+            }
+        }
+        ,
+
+
+
+
+
+
+
+
+        {
+            "switch": "on",
+            "name": "Buffer-size too big (> 512)",
+            "request":
+            {
+                "header":
+                {
+                    "c-type": "text/x.gcode",
+                    "c-id": 1254
+                }
+            ,
+                "body": 
+                {
+                    "type": "low",
+                    "repeat": 200,
+                    "command": "G1 X90"
+                }
+            }
+            ,
+            "result": 
+            {
+                "header": 
+                [
+                    "POST",
+                    "/p/events",
+                    "HTTP/1.0",
+                    "01234567899876543210",
+                    "application/json"
+                ]
+                ,
+                "body":
+                {
+                    "event": "REJECTED",
+                    "reason": "Packet size overflow",
+                    "command_id": 1254
+                }
+            }
+        }
+        ,
+
+
+
+
+
+
+
+
+        {
+            "switch": "on",
+            "name": "Command id == 0",
+            "request":
+            {
+                "header":
+                {
+                    "c-type": "text/x.gcode",
+                    "c-length": 6,
+                    "c-id": 0
+                }
+            ,
+                "body": 
+                {
+                    "type": "low",
+                    "command": "G1 X90"
+                }
+            }
+            ,
+            "result": 
+            {
+                "header": 
+                [
+                    "POST",
+                    "/p/events",
+                    "HTTP/1.0",
+                    "01234567899876543210",
+                    "application/json"
+                ]
+                ,
+                "body":
+                {
+                    "event": "REJECTED",
+                    "reason": "error with Command-Id",
+                    "command_id": 0
+                }
+            }
+        }
+        ,
+
+
+
+        {
+            "switch": "on",
+            "name": "Wrong request structure",
+            "request":
+            {
+                "header":
+                {
+                    "c-type": "text/x.gcode",
+                    "c-length": 2,
+                    "c-id": 265
+                }
+            ,
+                "body": 
+                {
+                    "type": "low",
+                    "command": "G1"
+                }
+            }
+            ,
+            "result": 
+            {
+                "header": 
+                [
+                    "POST",
+                    "/p/events",
+                    "HTTP/1.0",
+                    "01234567899876543210",
+                    "application/json"
+                ]
+                ,
+                "body":
+                {
+                    "event": "REJECTED",
+                    "reason": "error in the command structure",
+                    "command_id": 265
+                }
+            }
+        }
+        ,
+
+
+
+
+
+
+        {
+            "switch": "on",
+            "name": "More gcodes than limit (11)",
+            "request":
+            {
+                "header":
+                {
+                    "c-type": "text/x.gcode",
+                    "c-length": 76,
+                    "c-id": 7852
+                }
+            ,
+                "body": 
+                {
+                    "type": "low",
+                    "repeat": 11,
+                    "command": "G1 X90"
+                }
+            }
+            ,
+            "result": 
+            {
+                "header": 
+                [
+                    "POST",
+                    "/p/events",
+                    "HTTP/1.0",
+                    "01234567899876543210",
+                    "application/json"
+                ]
+                ,
+                "body":
+                {
+                    "event": "REJECTED",
+                    "reason": "number of gcodes exceeds limit",
+                    "command_id": 7852
+                }
+            }
+        }
+        ,
+        
+
+
+
+
+
+
+        {
+            "switch": "on",
+            "name": "Content-Length > real content length",
+            "request":
+            {
+                "header":
+                {
+                    "c-type": "text/x.gcode",
+                    "c-length": 12,
+                    "c-id": 111
+                }
+            ,
+                "body": 
+                {
+                    "type": "low",
+                    "command": "G1 X90"
+                }
+            }
+            ,
+            "result": 
+            {
+                "header": 
+                [
+                    "POST",
+                    "/p/events",
+                    "HTTP/1.0",
+                    "01234567899876543210",
+                    "application/json"
+                ]
+                ,
+                "body":
+                {
+                    "event": "REJECTED",
+                    "reason": "Content-Length doesnt match its real value",
+                    "command_id": 111
+                }
+            }
+        }
+        ,
+
+
+
+
+
+        {
+            "switch": "on",
+            "name": "Content-Length < real content length",
+            "request":
+            {
+                "header":
+                {
+                    "c-type": "text/x.gcode",
+                    "c-length": 5,
+                    "c-id": 112
+                }
+            ,
+                "body": 
+                {
+                    "type": "low",
+                    "command": "G1 X90"
+                }
+            }
+            ,
+            "result": 
+            {
+                "header": 
+                [
+                    "POST",
+                    "/p/events",
+                    "HTTP/1.0",
+                    "01234567899876543210",
+                    "application/json"
+                ]
+                ,
+                "body":
+                {
+                    "event": "REJECTED",
+                    "reason": "Content-Length doesnt match its real value",
+                    "command_id": 112
+                }
+            }
+        }
+
+        
 
     ]
 }

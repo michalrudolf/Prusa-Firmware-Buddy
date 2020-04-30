@@ -123,6 +123,7 @@ set(unused "${CMAKE_VERBOSE_MAKEFILE} ${CMAKE_RULE_MESSAGES}")
 # Set printer features
 set(PRINTERS_WITH_FILAMENT_SENSOR_YES "MINI")
 set(PRINTERS_WITH_GUI "MINI")
+set(PRINTERS_WITH_INIT_TRINAMIC_FROM_MARLIN_ONLY)
 
 if(${PRINTER} IN_LIST PRINTERS_WITH_FILAMENT_SENSOR_YES)
   set(FILAMENT_SENSOR YES)
@@ -136,6 +137,12 @@ else()
   set(GUI NO)
 endif()
 message(STATUS "GUI: ${GUI}")
+
+if(${PRINTER} IN_LIST PRINTERS_WITH_INIT_TRINAMIC_FROM_MARLIN_ONLY)
+  set(INIT_TRINAMIC_FROM_MARLIN_ONLY YES)
+else()
+  set(INIT_TRINAMIC_FROM_MARLIN_ONLY NO)
+endif()
 
 # append custom C/C++ flags
 if(CUSTOM_COMPILE_OPTIONS)
@@ -210,24 +217,6 @@ add_library(STM32_Utilities_CPU_Config ALIAS A3idesHeaders)
 add_library(FreeRTOS_Config INTERFACE)
 target_include_directories(FreeRTOS_Config INTERFACE include/freertos)
 target_link_libraries(FreeRTOS_Config INTERFACE STM32::CPU)
-
-#
-# Configure LwIP
-#
-
-add_library(LwIP_Config INTERFACE)
-target_link_libraries(LwIP_Config INTERFACE A3idesHeaders)
-
-#
-# Configure WUI
-#
-
-if(WUI)
-  add_library(WUI_Config INTERFACE)
-  target_include_directories(WUI_Config INTERFACE src/common src/gui src/guiapi/include)
-  target_compile_definitions(WUI_Config INTERFACE -DHTTPD_FSDATA_FILE="fsdata_wui_local.c")
-  target_link_libraries(WUI_Config INTERFACE A3idesHeaders QR)
-endif()
 
 #
 # Configure FatFs
@@ -396,7 +385,6 @@ target_link_libraries(
           Arduino::Core
           Arduino::TMCStepper
           Arduino::LiquidCrystal
-          LwIP
           FatFs
           lpng
           STM32::USBHost
@@ -413,13 +401,11 @@ target_sources(
   firmware
   PRIVATE $<$<IN_LIST:${BOOTLOADER},YES;EMPTY>:src/startup/startup_stm32f407xx_boot.s>
           $<$<STREQUAL:${BOOTLOADER},NO>:src/startup/startup_stm32f407xx.s>
-          # src/lwip.c
           src/usbd_cdc_if.c
           src/usb_device.c
           src/freertos.c
           src/freertos_openocd.c
           src/usbh_diskio.c
-          # src/ethernetif.c
           src/main_${PRINTER}.c
           src/usbd_desc.c
           $<$<IN_LIST:${BOOTLOADER},YES;EMPTY>:src/system_stm32f4xx_boot.c>
@@ -431,8 +417,9 @@ target_sources(
           src/usbh_conf.c
           src/usbd_conf.c
           src/stm32f4xx_hal_timebase_tim.c
-          $<$<STREQUAL:${FILAMENT_SENSOR},YES>:src/common/filament_sensor.c>
+          $<$<STREQUAL:${FILAMENT_SENSOR},YES>:src/common/filament_sensor.cpp>
           $<$<BOOL:${FILAMENT_SENSOR}>:src/common/thread_measurement.c>
+          src/common/wui_api.c
           src/common/diag.c
           src/common/eeprom.c
           src/common/eeprom_loadsave.c
@@ -461,8 +448,7 @@ target_sources(
           src/common/marlin_server.cpp
           src/common/sim_motion.cpp
           src/common/st25dv64k.c
-          src/common/trinamic.cpp
-          src/common/trinamic.h
+          $<$<STREQUAL:${INIT_TRINAMIC_FROM_MARLIN_ONLY},NO>:src/common/trinamic.cpp>
           src/common/w25x.c
           src/common/gcode_file.cpp
           src/common/gcode_thumb_decoder.cpp
@@ -471,6 +457,7 @@ target_sources(
           src/common/support_utils.cpp
           src/common/errors.c
           src/common/lang.c
+          src/common/client_response.cpp
           src/common/crc32.c
           src/common/ini_handler.c
           $<$<STREQUAL:${PRINTER},MINI>:src/common/minda_broken_cable_detection.c>
@@ -485,20 +472,24 @@ target_sources(
           src/gui/guimain.c
           src/gui/filament.cpp
   )
+# specify the HTTP server files
+target_compile_definitions(firmware PRIVATE -DHTTPD_FSDATA_FILE="fsdata_wui_local.c")
 
 if(GUI)
   target_sources(
     firmware
     PRIVATE src/gui/screen_menu_filament.c
-            src/gui/dialogs/window_dlg_change.c
-            src/gui/dialogs/window_dlg_loadunload_shared.c
-            src/gui/dialogs/window_dlg_statemachine.c
-            src/gui/dialogs/window_dlg_load.c
+            src/gui/dialogs/Dialog_C_wrapper.cpp
+            src/gui/dialogs/IDialog.cpp
+            src/gui/dialogs/DialogFactory.cpp
+            src/gui/dialogs/DialogHandler.cpp
+            src/gui/dialogs/DialogStateful.cpp
+            src/gui/dialogs/DialogRadioButton.cpp
+            src/gui/dialogs/DialogLoadUnload.cpp
+            src/gui/dialogs/window_dlg_load_unload.c
             src/gui/dialogs/window_dlg_wait.c
             src/gui/dialogs/window_dlg_popup.c
-            src/gui/dialogs/window_dlg_purge.c
             src/gui/dialogs/window_dlg_preheat.c
-            src/gui/dialogs/window_dlg_unload.c
             src/gui/screen_menu_temperature.c
             src/gui/resource.c
             src/gui/window_file_list.c
@@ -514,7 +505,6 @@ if(GUI)
             src/gui/screen_version_info.cpp
             src/gui/test_display.c
             src/gui/screen_splash.c
-            src/gui/window_logo.c
             src/gui/screen_menu_service.c
             src/gui/screen_menu_calibration.c
             src/gui/screen_menu.c
@@ -597,4 +587,11 @@ set_property(
   SOURCE src/common/bsod.c src/common/appmain.cpp src/common/sys.cpp src/common/putslave.c
   APPEND
   PROPERTY COMPILE_DEFINITIONS HAS_GUI=$<BOOL:${GUI}>
+  )
+
+set_property(
+  SOURCE src/common/appmain.cpp src/common/putslave.c
+  APPEND
+  PROPERTY COMPILE_DEFINITIONS
+           INIT_TRINAMIC_FROM_MARLIN_ONLY=$<BOOL:${INIT_TRINAMIC_FROM_MARLIN_ONLY}>
   )

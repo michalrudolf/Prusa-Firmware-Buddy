@@ -1,27 +1,25 @@
-if(NOT TARGET WUI_Config)
-  message(FATAL_ERROR "Target WUI_Config does not exist.")
-endif()
+add_library(WUI INTERFACE)
 
-add_library(
-  WUI
+target_sources(WUI INTERFACE
   wui.c
-  wui_api.c
+  wui_REST_api.c
   wui_helper_funcs.c
+  wui_request_parser.c
   http/altcp_proxyconnect.c
   http/fs.c
   http/http_client.c
   http/httpd.c
-  resources/${HTTPD_FSDATA_FILE}
   progress_data_wrapper.cpp
   lwip.c
   ethernetif.c
+  netif_settings.c
   sntp/sntp_client.c
   sntp/sntp.c
 )
 
 target_include_directories(
   WUI
-  PUBLIC
+  INTERFACE
     ${CMAKE_CURRENT_LIST_DIR}
     http
     sntp
@@ -30,8 +28,7 @@ target_include_directories(
 
 target_link_libraries(
   WUI
-  PRIVATE LwIP
-          jsmn::jsmn
-          Marlin
-          WUI_Config
+  INTERFACE LwIP
+            jsmn::jsmn
+            Marlin
   )
