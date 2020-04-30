@@ -28,6 +28,7 @@ typedef enum {
 typedef struct {
     char token[CONNECT_TOKEN_LEN + 1];  // security token: 20 chars
     ip4_addr_t ip4;                     // user defined CONNECT ip4
+    uint16_t port;                      // user defined CONNECT port
 } connect_t; 
 
 typedef struct {
