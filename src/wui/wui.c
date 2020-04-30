@@ -106,8 +106,10 @@ void StartWebServerTask(void const *argument) {
     // LwIP related initalizations
     MX_LWIP_Init();
     http_server_init();
+    sntp_client_init();
 
-    bool sntp_not_initialized = true;
+    char sys_time[11];
+    char sys_date[13];
 
 #ifdef BUDDY_ENABLE_CONNECT
     buddy_httpc_handler_init();
@@ -123,12 +125,9 @@ void StartWebServerTask(void const *argument) {
             update_wui_vars();
         }
 
-        if (sntp_not_initialized) {
-            if (dhcp_addrs_are_supplied()) {
-                sntp_client_init();
-                sntp_not_initialized = false;
-            }
-        }
+        sntp_get_system_time(sys_time);
+        sntp_get_system_date(sys_date);
+
 
 #ifdef BUDDY_ENABLE_CONNECT
         buddy_httpc_handler();

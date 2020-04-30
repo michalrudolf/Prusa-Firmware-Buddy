@@ -283,7 +283,7 @@ void sntp_get_system_date(char * dest){
 
     HAL_RTC_GetDate(&hrtc, &currDate, RTC_FORMAT_BIN);
 
-    snprintf(dest, 10, "%02d.%02d.%d", currDate.Date, currDate.Month, currDate.Year);
+    snprintf(dest, 12, "%02d.%02d.%d", currDate.Date, currDate.Month + 1, currDate.Year + 1900);
   } else {
     strcpy(dest, "N/A");
   }
@@ -307,8 +307,8 @@ void sntp_set_system_time(uint32_t sec)
   currTime.Minutes = current_time_val.tm_min;
   currTime.Hours = current_time_val.tm_hour;
   currDate.Date = current_time_val.tm_mday;
-  currDate.Month = current_time_val.tm_mon + 1;
-  currDate.Year = current_time_val.tm_year + 1900;
+  currDate.Month = current_time_val.tm_mon;
+  currDate.Year = current_time_val.tm_year;
   currDate.WeekDay = current_time_val.tm_wday;
 
   HAL_RTC_SetTime(&hrtc, &currTime, RTC_FORMAT_BIN);

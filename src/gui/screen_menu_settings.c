@@ -76,7 +76,7 @@ const menu_item_t _menu_settings_items[] = {
     { { "Timeout", 0, WI_SWITCH, .wi_switch_select = { 0, settings_opt_enable_disable } }, SCREEN_MENU_NO_SCREEN },
 #ifdef BUDDY_ENABLE_ETHERNET
     { { "LAN Settings", 0, WI_LABEL }, &screen_lan_settings },
-    { { "TZ UTC+", 0, WI_SPIN }, SCREEN_MENU_NO_SCREEN },
+    { { "TZ UTC(+/-)", 0, WI_SPIN }, SCREEN_MENU_NO_SCREEN },
 #endif //BUDDY_ENABLE_ETHERNET
     { { "Save Crash Dump", 0, WI_LABEL }, SCREEN_MENU_NO_SCREEN },
 #ifdef _DEBUG
@@ -121,7 +121,7 @@ void screen_menu_settings_init(screen_t *screen) {
     psmd->items[MI_FILAMENT_SENSOR].item.wi_switch_select.index = (fs != FS_DISABLED);
     psmd->items[MI_TIMEOUT].item.wi_switch_select.index = menu_timeout_enabled; //st25dv64k_user_read(MENU_TIMEOUT_FLAG_ADDRESS)
 #ifdef BUDDY_ENABLE_ETHERNET
-    psmd->items[MI_TIMEZONE].item.wi_spin.value = (int32_t)eeprom_get_var(EEVAR_TIMEZONE).i8;
+    psmd->items[MI_TIMEZONE].item.wi_spin.value = (int32_t)(eeprom_get_var(EEVAR_TIMEZONE).i8 * 1000);
     psmd->items[MI_TIMEZONE].item.wi_spin.range = timezone_range;
 #endif //BUDDY_ENABLE_ETHERNET
 }
@@ -197,9 +197,6 @@ int screen_menu_settings_event(screen_t *screen, window_t *window, uint8_t event
                 //st25dv64k_user_write((uint16_t)MENU_TIMEOUT_FLAG_ADDRESS, (uint8_t)1);
             }
             break;
-        case MI_TIMEZONE:
-            eeprom_set_var(EEVAR_TIMEZONE, variant8_i8((int8_t)psmd->items[MI_TIMEZONE].item.wi_spin.value));
-            break;
         case MI_FILAMENT_SENSOR: {
             fsensor_t fs = fs_get_state();
             fs == FS_DISABLED ? fs_enable() : fs_disable();
@@ -213,7 +210,18 @@ int screen_menu_settings_event(screen_t *screen, window_t *window, uint8_t event
             }
         } break;
         }
+    } 
+#ifdef BUDDY_ENABLE_ETHERNET
+    else if (event == WINDOW_EVENT_CHANGE) {
+        switch ((int)param) {
+        case MI_TIMEZONE: {
+            int8_t time_zone = (int8_t)(psmd->items[MI_TIMEZONE].item.wi_spin.value / 1000);
+            eeprom_set_var(EEVAR_TIMEZONE, variant8_i8(time_zone));
+            break;
+            }
+        }
     }
+#endif //BUDDY_ENABLE_ETHERNET
     return 0;
 }
 
