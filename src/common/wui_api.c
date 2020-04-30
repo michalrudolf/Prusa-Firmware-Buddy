@@ -180,9 +180,9 @@ void stringify_eth_for_ini(char * dest, ETH_config_t *config) {
     ip4addr_ntoa_r(&(config->connect.ip4), connect, IP4_ADDR_STR_SIZE);
 
     snprintf(dest, MAX_INI_SIZE,
-        "[lan_ip4]\ntype=%s\nhostname=%s\naddress=%s\nmask=%s\ngateway=%s\n\n[connect]\naddress=%s\ntoken=%s\n",
+        "[lan_ip4]\ntype=%s\nhostname=%s\naddress=%s\nmask=%s\ngateway=%s\n\n[connect]\naddress=%s\ntoken=%s\nport=%u\n",
         IS_LAN_STATIC(config->lan.flag) ? "STATIC" : "DHCP", config->hostname,
-        addr, msk, gw, connect, config->connect.token);
+        addr, msk, gw, connect, config->connect.token, config->connect.port);
 }
 
 void stringify_eth_for_screen(char * dest, ETH_config_t * config) {
