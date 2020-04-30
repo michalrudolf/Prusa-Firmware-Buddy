@@ -108,9 +108,6 @@ void StartWebServerTask(void const *argument) {
     http_server_init();
     sntp_client_init();
 
-    char sys_time[11];
-    char sys_date[13];
-
 #ifdef BUDDY_ENABLE_CONNECT
     buddy_httpc_handler_init();
 #endif // BUDDY_ENABLE_CONNECT
@@ -124,10 +121,6 @@ void StartWebServerTask(void const *argument) {
             marlin_client_loop();
             update_wui_vars();
         }
-
-        sntp_get_system_time(sys_time);
-        sntp_get_system_date(sys_date);
-
 
 #ifdef BUDDY_ENABLE_CONNECT
         buddy_httpc_handler();
