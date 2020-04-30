@@ -20,10 +20,9 @@ void sntp_client_init(void)
   //  sntp_servermode_dhcp(1); /* get SNTP server via DHCP */
 
     // In LwIP init netif_default is set to eth0, BUT
-    // When DHCP is enabled, it supplies addrs after this is called -> set_server 0.0.0.0
+    // When DHCP is enabled, it supplies addrs after this is called -> send NTP request from 0.0.0.0
     if(ipaddr_aton("195.113.144.238", &ntp_server)){
       sntp_setserver(0, &ntp_server);
     }
-  //}
   sntp_init();
 }
