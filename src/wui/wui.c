@@ -106,8 +106,14 @@ void StartWebServerTask(void const *argument) {
     // LwIP related initalizations
     MX_LWIP_Init();
     http_server_init();
+
+/* 
+* SNTP here is temporary sollution, because:
+* In LwIP init netif_default is set to eth0, BUT
+* When DHCP is enabled, it supplies addrs after this is called -> first call is from 0.0.0.0
+*/
     sntp_client_init();
-    
+
 #ifdef BUDDY_ENABLE_CONNECT
     buddy_httpc_handler_init();
 #endif // BUDDY_ENABLE_CONNECT
