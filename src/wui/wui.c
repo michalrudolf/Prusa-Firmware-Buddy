@@ -14,6 +14,7 @@
 #include "ethernetif.h"
 #include "http_client.h"
 #include <string.h>
+#include "sntp_client.h"
 #include "dbg.h"
 
 #define MAX_WUI_REQUEST_LEN    100
@@ -107,8 +108,8 @@ void StartWebServerTask(void const *argument) {
     // LwIP related initalizations
     MX_LWIP_Init();
     http_server_init();
-
     sntp_client_init();
+    
 #ifdef BUDDY_ENABLE_CONNECT
     buddy_httpc_handler_init();
 #endif // BUDDY_ENABLE_CONNECT

@@ -13,10 +13,16 @@
 #include "ini_handler.h"
 #include "eeprom.h"
 #include "string.h"
+#include <stdbool.h>
+#include <time.h>
+#include "main.h"
+#include "stm32f4xx_hal.h"
 
 #define PRINTER_TYPE_ADDR    0x0802002F // 1 B
 #define PRINTER_VERSION_ADDR 0x08020030 // 1 B
 #define IP4_ADDR_STR_SIZE   16
+
+static bool sntp_time_init = false;
 
 static int ini_handler_func(void *user, const char *section, const char *name, const char *value) {
 
@@ -236,4 +242,54 @@ uint32_t set_loaded_eth_params(ETH_config_t * config){
     save_eth_params(config);
 
     return 0;
+}
+
+void sntp_get_system_time(char * dest){
+
+  if(sntp_time_init){
+    RTC_TimeTypeDef currTime;
+
+    HAL_RTC_GetTime(&hrtc, &currTime, RTC_FORMAT_BIN);
+
+    snprintf(dest, 10, "%02d:%02d:%02d", currTime.Hours, currTime.Minutes, currTime.Seconds);
+  } else {
+    strcpy(dest, "N/A");
+  }
+}
+
+void sntp_get_system_date(char * dest){
+
+  if(sntp_time_init){
+    RTC_DateTypeDef currDate;
+
+    HAL_RTC_GetDate(&hrtc, &currDate, RTC_FORMAT_BIN);
+
+    snprintf(dest, 10, "%02d:%02d:%02d", currDate.Date, currDate.Month, currDate.Year);
+  } else {
+    strcpy(dest, "N/A");
+  }
+}
+
+void sntp_set_system_time(uint32_t sec)
+{ 
+  RTC_TimeTypeDef currTime;
+  RTC_DateTypeDef currDate;
+
+  struct tm current_time_val;
+  time_t current_time = (time_t)sec;
+
+  localtime_r(&current_time, &current_time_val);
+
+  currTime.Seconds = current_time_val.tm_sec;
+  currTime.Minutes = current_time_val.tm_min;
+  currTime.Hours = current_time_val.tm_hour;
+  currDate.Date = current_time_val.tm_mday;
+  currDate.Month = current_time_val.tm_mon;
+  currDate.Year = current_time_val.tm_year;
+  currDate.WeekDay = current_time_val.tm_wday;
+
+  HAL_RTC_SetTime(&hrtc, &currTime, RTC_FORMAT_BIN);
+  HAL_RTC_SetDate(&hrtc, &currDate, RTC_FORMAT_BIN);
+
+  sntp_time_init = true;
 }

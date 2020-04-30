@@ -156,7 +156,7 @@ extern "C" {
     #endif
     #define LWIP_DNS 0
     #define SNTP_CUSTOM_SET_SYS_TIME   1
-    #define SNTP_CUSTOM_HEADER         "sntp_client.h"
+    #define SNTP_CUSTOM_HEADER         "wui_api.h"
 
 /* USER CODE END 1 */
 

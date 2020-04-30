@@ -182,6 +182,28 @@ void set_LAN_to_dhcp(ETH_config_t *config);
 * \brief Returns if DHCP server already supplied ip addresses
 *****************************************************************************/
 uint8_t dhcp_addrs_are_supplied(void);
+
+/*!****************************************************************************
+* \brief Parses time from device's RTC in dest string
+*
+* \param dest - destination string for paresd time ! MIN 10 chars !
+*****************************************************************************/
+void sntp_get_system_time(char * dest);
+
+/*!****************************************************************************
+* \brief Parses date from device's RTC in dest string
+*
+* \param dest - destination string for paresd date ! MIN 10 chars !
+*****************************************************************************/
+void sntp_get_system_date(char * dest);
+
+/*!****************************************************************************
+* \brief Sets time and date in device's RTC on some other time storage
+*
+* \param [in] sec - number of seconds from 1.1.1970
+*****************************************************************************/
+void sntp_set_system_time(uint32_t sec);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus
