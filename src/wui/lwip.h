@@ -85,6 +85,9 @@ extern "C" {
 
 #define BUDDY_ENABLE_CONNECT
 extern struct netif eth0;
+extern ip4_addr_t ipaddr;
+extern ip4_addr_t netmask;
+extern ip4_addr_t gw;
 extern ETH_HandleTypeDef heth;
 
 /*!****************************************************************************

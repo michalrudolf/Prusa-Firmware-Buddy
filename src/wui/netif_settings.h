@@ -7,9 +7,9 @@
 #define LAN_FLAG_TYPE_POS       (1 << 1)    // position of DHCP/STATIC switch in lan.flag
 
 #define IS_LAN_OFF(flg)         (flg & LAN_FLAG_ONOFF_POS)           // returns true if flag is set to OFF
-#define IS_LAN_ON(flg)          (!IS_LAN_OFF(flg))              // returns true if flag is set to ON
+#define IS_LAN_ON(flg)          ((flg & LAN_FLAG_ONOFF_POS) == 0)    // returns true if flag is set to ON
 #define IS_LAN_STATIC(flg)      (flg & LAN_FLAG_TYPE_POS)            // returns true if flag is set to STATIC
-#define IS_LAN_DHCP(flg)        (!IS_LAN_STATIC(flg))           // returns true if flag is set to DHCP
+#define IS_LAN_DHCP(flg)        ((flg & LAN_FLAG_TYPE_POS) == 0)     // returns true if flag is set to DHCP
 
 #define CHANGE_LAN_TO_STATIC(flg)   (flg |= LAN_FLAG_TYPE_POS)      // flip lan type flg to STATIC
 #define CHANGE_LAN_TO_DHCP(flg)     (flg &= ~LAN_FLAG_TYPE_POS)     // flip lan type flg to DHCP
