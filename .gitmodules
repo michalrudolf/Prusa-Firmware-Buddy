@@ -13,3 +13,6 @@
 [submodule "lib/jsmn"]
 	path = lib/jsmn
 	url = https://github.com/zserge/jsmn.git
+[submodule "WUI"]
+	path = lib/wui
+	url = https://github.com/prusa3d/Prusa-Buddy-wui.git
