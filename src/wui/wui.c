@@ -14,6 +14,7 @@
 #include "ethernetif.h"
 #include "http_client.h"
 #include <string.h>
+#include "sntp_client.h"
 #include "dbg.h"
 
 #define MAX_WUI_REQUEST_LEN    100
@@ -101,12 +102,11 @@ void StartWebServerTask(void const *argument) {
     marlin_client_set_change_notify(MARLIN_VAR_MSK_DEF | MARLIN_VAR_MSK_WUI);
     // get settings from ini file
     ETH_config_t config;
-    if(load_ini_params(&config)){
-        set_loaded_eth_params(&config);
-    }
+    load_ini_params(&config);
     // LwIP related initalizations
     MX_LWIP_Init();
     http_server_init();
+    sntp_client_init();
 
 #ifdef BUDDY_ENABLE_CONNECT
     buddy_httpc_handler_init();

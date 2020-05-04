@@ -6,7 +6,7 @@
 #include "variant8.h"
 
 #define EEPROM_ADDRESS  0x0500
-#define EEPROM_VERSION  5
+#define EEPROM_VERSION  6
 #define EEPROM_FEATURES (EEPROM_FEATURE_PID_NOZ | EEPROM_FEATURE_PID_BED | EEPROM_FEATURE_LAN)
 
 #define EEPROM_FEATURE_PID_NOZ 0x0001
@@ -53,11 +53,12 @@
     #define EEVAR_CONNECT_PORT  0x19
     #define EEVAR_CONNECT_TOKEN 0x1A // 20char string
     #define EEVAR_LAN_HOSTNAME  0x1B // 20char string
+    #define EEVAR_TIMEZONE      0x1C // int8_t hour difference from UTC
 #endif                               // (EEPROM_FEATURES & EEPROM_FEATURE_LAN)
 
-#define EEVAR__PADDING  0x1C // 1..4 chars, to ensure (DATASIZE % 4 == 0)
+#define EEVAR__PADDING  0x1D // 1..4 chars, to ensure (DATASIZE % 4 == 0)
 
-#define EEVAR_CRC32     0x1D // uint32_t crc32 for
+#define EEVAR_CRC32     0x1E // uint32_t crc32 for
 
 #define LAN_EEFLG_ONOFF      1 //EEPROM flag for user-defined settings (SW turn OFF/ON of the LAN)
 #define LAN_EEFLG_TYPE       2 //EEPROM flag for user-defined settings (Switch between dhcp and static)

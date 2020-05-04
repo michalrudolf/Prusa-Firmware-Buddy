@@ -67,6 +67,7 @@ typedef struct _eeprom_vars_t {
     uint16_t CONNECT_PORT;
     char CONNECT_TOKEN[CONNECT_TOKEN_LEN + 1];
     char LAN_HOSTNAME[ETH_HOSTNAME_LEN + 1];
+    int8_t TIMEZONE;
     char _PADDING[EEPROM__PADDING];
     uint32_t CRC32;
 } eeprom_vars_t;
@@ -105,6 +106,7 @@ static const eeprom_entry_t eeprom_map[] = {
     { "CONNECT_PORT",    VARIANT8_UI16,  1, 0 }, // EEVAR_CONNECT_PORT
     { "CONNECT_TOKEN",   VARIANT8_PCHAR, CONNECT_TOKEN_LEN + 1, 0 }, // EEVAR_CONNECT_TOKEN
     { "LAN_HOSTNAME",    VARIANT8_PCHAR, ETH_HOSTNAME_LEN + 1, 0 }, // EEVAR_LAN_HOSTNAME
+    { "TIMEZONE",        VARIANT8_I8,    1, 0 }, // EEVAR_TIMEZONE
     { "_PADDING",        VARIANT8_PCHAR, EEPROM__PADDING, 0 }, // EEVAR__PADDING32
     { "CRC32",           VARIANT8_UI32,  1, 0 }, // EEVAR_CRC32
 };
@@ -139,6 +141,7 @@ static const eeprom_vars_t eeprom_var_defaults = {
     80,              // EEVAR_CONNECT_PORT
     "",              // EEVAR_CONNECT_TOKEN
     "PrusaMINI",     // EEVAR_LAN_HOSTNAME
+    0,
     "",              // EEVAR__PADDING
     0xffffffff,      // EEVAR_CRC32
 };

@@ -13,10 +13,16 @@
 #include "ini_handler.h"
 #include "eeprom.h"
 #include "string.h"
+#include <stdbool.h>
+#include <time.h>
+#include "main.h"
+#include "stm32f4xx_hal.h"
 
 #define MAX_UINT16              65535
 #define PRINTER_TYPE_ADDR       0x0802002F // 1 B
 #define PRINTER_VERSION_ADDR    0x08020030 // 1 B
+
+static bool sntp_time_init = false;
 
 static int ini_handler_func(void *user, const char *section, const char *name, const char *value) {
 
@@ -34,7 +40,6 @@ static int ini_handler_func(void *user, const char *section, const char *name, c
         }
     } else if (MATCH("lan_ip4", "hostname")) {
         strlcpy(tmp_config->hostname, value, ETH_HOSTNAME_LEN + 1);
-        tmp_config->hostname[ETH_HOSTNAME_LEN] = '\0';
         tmp_config->var_mask |= ETHVAR_MSK(ETHVAR_HOSTNAME);
     } else if (MATCH("lan_ip4", "address")) {
         if (ip4addr_aton(value, &tmp_config->lan.addr_ip4)) {
@@ -70,10 +75,12 @@ static int ini_handler_func(void *user, const char *section, const char *name, c
 static ini_handler wui_ini_handler = ini_handler_func;
 
 uint32_t load_ini_params(ETH_config_t * config) {
+    config->var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS);
+    load_eth_params(config);
     config->var_mask = 0;
-    if(ini_load_file(wui_ini_handler, &config)){
-        save_eth_params(config);
-        return 1;
+
+    if(ini_load_file(wui_ini_handler, config)){
+        return set_loaded_eth_params(config);
     } else {
         return 0;
     }
@@ -82,7 +89,7 @@ uint32_t load_ini_params(ETH_config_t * config) {
 uint32_t save_eth_params(ETH_config_t * ethconfig) {
 
     if (ethconfig->var_mask & ETHVAR_MSK(ETHVAR_LAN_FLAGS)) {
-        eeprom_set_var(EEVAR_LAN_FLAG, variant8_ui16(ethconfig->lan.flag));
+        eeprom_set_var(EEVAR_LAN_FLAG, variant8_ui8(ethconfig->lan.flag));
     }
     if (ethconfig->var_mask & ETHVAR_MSK(ETHVAR_LAN_ADDR_IP4)) {
         eeprom_set_var(EEVAR_LAN_IP4_ADDR, variant8_ui32(ethconfig->lan.addr_ip4.addr));
@@ -108,6 +115,9 @@ uint32_t save_eth_params(ETH_config_t * ethconfig) {
     }
     if (ethconfig->var_mask & ETHVAR_MSK(ETHVAR_CONNECT_PORT)) {
         eeprom_set_var(EEVAR_CONNECT_PORT, variant8_ui16(ethconfig->connect.port));
+    }
+    if (ethconfig->var_mask & ETHVAR_MSK(ETHVAR_TIMEZONE)) {
+        eeprom_set_var(EEVAR_TIMEZONE, variant8_i8(ethconfig->timezone));
     }
 
     return 0;
@@ -142,6 +152,9 @@ uint32_t load_eth_params(ETH_config_t *ethconfig) {
     }
     if (ethconfig->var_mask & ETHVAR_MSK(ETHVAR_CONNECT_PORT)) {
         ethconfig->connect.port = eeprom_get_var(EEVAR_CONNECT_PORT).ui16;
+    }
+    if (ethconfig->var_mask & ETHVAR_MSK(ETHVAR_TIMEZONE)) {
+        ethconfig->timezone = eeprom_get_var(EEVAR_TIMEZONE).i8;
     }
 
     return 0;
@@ -216,7 +229,7 @@ uint32_t set_loaded_eth_params(ETH_config_t * config){
         // if lan type is set to STATIC
         if (IS_LAN_STATIC(config->lan.flag)){
             if ((config->var_mask & ETHVAR_STATIC_LAN_ADDRS) != ETHVAR_STATIC_LAN_ADDRS) {
-                return 1;
+                return 0;
             }
         }
     }
@@ -225,18 +238,18 @@ uint32_t set_loaded_eth_params(ETH_config_t * config){
     }
 
     // ugly way to aquire lan flags before load
-    uint8_t swaper, tmp_lan_flag = config->lan.flag;
+    uint8_t swaper, prev_lan_flag = config->lan.flag;
     uint32_t set_mask = config->var_mask;
     config->var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS);
     load_eth_params(config);
-    swaper = tmp_lan_flag;
-    tmp_lan_flag = config->lan.flag;
+    swaper = prev_lan_flag;
+    prev_lan_flag = config->lan.flag;
     config->lan.flag = swaper;
     config->var_mask = set_mask;
 
     if (config->var_mask & ETHVAR_MSK(ETHVAR_LAN_FLAGS)) {
         // if there was a change from STATIC to DHCP
-        if (IS_LAN_STATIC(tmp_lan_flag) && IS_LAN_DHCP(config->lan.flag)) {
+        if (IS_LAN_STATIC(prev_lan_flag) && IS_LAN_DHCP(config->lan.flag)) {
             set_LAN_to_dhcp(config);
         // or STATIC to STATIC
         } else if (IS_LAN_STATIC(config->lan.flag)){
@@ -247,5 +260,59 @@ uint32_t set_loaded_eth_params(ETH_config_t * config){
 
     save_eth_params(config);
 
-    return 0;
+    return 1;
+}
+
+void sntp_get_system_time(char * dest){
+
+  if(sntp_time_init){
+    RTC_TimeTypeDef currTime;
+
+    HAL_RTC_GetTime(&hrtc, &currTime, RTC_FORMAT_BIN);
+
+    snprintf(dest, 10, "%02d:%02d:%02d", currTime.Hours, currTime.Minutes, currTime.Seconds);
+  } else {
+    strcpy(dest, "N/A");
+  }
+}
+
+void sntp_get_system_date(char * dest){
+
+  if(sntp_time_init){
+    RTC_DateTypeDef currDate;
+
+    HAL_RTC_GetDate(&hrtc, &currDate, RTC_FORMAT_BIN);
+
+    snprintf(dest, 12, "%02d.%02d.%d", currDate.Date, currDate.Month + 1, currDate.Year + 1900);
+  } else {
+    strcpy(dest, "N/A");
+  }
+}
+
+void sntp_set_system_time(uint32_t sec)
+{
+  ETH_config_t config;
+  config.var_mask = ETHVAR_MSK(ETHVAR_TIMEZONE);
+  load_eth_params(&config);
+
+  RTC_TimeTypeDef currTime;
+  RTC_DateTypeDef currDate;
+
+  struct tm current_time_val;
+  time_t current_time = (time_t)sec + (config.timezone * 3600);
+
+  localtime_r(&current_time, &current_time_val);
+
+  currTime.Seconds = current_time_val.tm_sec;
+  currTime.Minutes = current_time_val.tm_min;
+  currTime.Hours = current_time_val.tm_hour;
+  currDate.Date = current_time_val.tm_mday;
+  currDate.Month = current_time_val.tm_mon;
+  currDate.Year = current_time_val.tm_year;
+  currDate.WeekDay = current_time_val.tm_wday;
+
+  HAL_RTC_SetTime(&hrtc, &currTime, RTC_FORMAT_BIN);
+  HAL_RTC_SetDate(&hrtc, &currDate, RTC_FORMAT_BIN);
+
+  sntp_time_init = true;
 }

@@ -13,6 +13,8 @@ target_sources(WUI INTERFACE
   lwip.c
   ethernetif.c
   netif_settings.c
+  sntp/sntp_client.c
+  sntp/sntp.c
 )
 
 target_include_directories(
@@ -20,6 +22,7 @@ target_include_directories(
   INTERFACE
     ${CMAKE_CURRENT_LIST_DIR}
     http
+    sntp
     resources
 )
 

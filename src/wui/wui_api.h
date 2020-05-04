@@ -39,6 +39,7 @@ typedef enum {
     ETHVAR_LAN_GW_IP4,      // ip4_addr_t, lan.gw_ip4
     ETHVAR_CONNECT_IP4,     // ip4_addr_t, connect.ip4
     ETHVAR_CONNECT_PORT,    // unsigned, connect.port (0-65535)
+    ETHVAR_TIMEZONE,        // int8_t, timezone
 } ETHVAR_t;
 
 typedef struct {
@@ -127,7 +128,7 @@ void parse_MAC_addr(void);
 *
 * \return   uint32_t    error value
 *
-* \retval   0 if successful
+* \retval   1 if successful
 *****************************************************************************/
 uint32_t set_loaded_eth_params(ETH_config_t * config);
 /*!******************************************************************************************
@@ -184,6 +185,28 @@ void set_LAN_to_dhcp(ETH_config_t *config);
 * \brief Returns if DHCP server already supplied ip addresses
 *****************************************************************************/
 uint8_t dhcp_addrs_are_supplied(void);
+
+/*!****************************************************************************
+* \brief Parses time from device's time storage in dest string in format hh:mm:ss
+*
+* \param dest - destination string for paresd time ! At least 10 chars !
+*****************************************************************************/
+void sntp_get_system_time(char * dest);
+
+/*!****************************************************************************
+* \brief Parses date from device's time storage in dest string in format dd.mm.yyyy
+*
+* \param dest - destination string for paresd date ! At least 12 chars !
+*****************************************************************************/
+void sntp_get_system_date(char * dest);
+
+/*!****************************************************************************
+* \brief Sets time and date in device's RTC on some other time storage
+*
+* \param [in] sec - number of seconds from 1.1.1900
+*****************************************************************************/
+void sntp_set_system_time(uint32_t sec);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

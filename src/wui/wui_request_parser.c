@@ -98,7 +98,9 @@ static HTTPC_COMMAND_STATUS parse_low_level_cmd(const char *request, httpc_heade
     cmd.lvl = LOW_LVL_CMD;
     for (uint32_t cnt = 0; cnt < cmd_count; cnt++) {
         strcpy(cmd.arg, gcode_str[cnt]);
-        send_request_to_wui(&cmd);
+        if(send_request_to_wui(&cmd)){
+            return CMD_REJT_NO_SPACE;
+        }
     }
 
     return CMD_ACCEPTED;

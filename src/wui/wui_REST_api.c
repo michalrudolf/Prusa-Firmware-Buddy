@@ -78,7 +78,7 @@ void get_telemetry_for_connect(char *data, const uint32_t buf_len) {
                             "\"print_dur\":\"%s\"," // OctoPrint API ?
                             "\"time_est\":\"%s\","
                             "\"printing_time\":%ld," // Connect
-                            "\"estimated_time\":%ld,"
+                            "\"estimated_time\":%lu,"
                             "\"project_name\":\"%s\","
                             "\"state\":\"PRINTING\""
                             "}",
