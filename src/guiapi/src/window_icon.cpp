@@ -101,6 +101,25 @@ void window_icon_button_t::windowEvent(window_t *sender, uint8_t event, void *pa
     }
 }
 
+void window_icon_button_t::draw() {
+    if (IsInvalid()) {
+        uint8_t raster_operations = 0;
+        if (IsShadowed()) {
+            raster_operations |= ROPFN_DISABLE;
+            color_back = COLOR_BLACK;
+        } else if (IsFocused()) {
+            raster_operations |= ROPFN_SWAPBW;
+            color_back = COLOR_BLACK; // Icon stayes black and SWAPBlackWhite will make white bg
+        } else {
+            color_back = COLOR_DARK_GRAY;
+        }
+
+        render_icon_align(rect, id_res, color_back,
+            RENDER_FLG(alignment, raster_operations));
+        Validate();
+    }
+}
+
 /*****************************************************************************/
 //window_icon_hourglass_t
 window_icon_hourglass_t::window_icon_hourglass_t(window_t *parent, point_ui16_t pt, padding_ui8_t padding, is_closed_on_click_t close)
