@@ -108,6 +108,56 @@ bool render_textUnicode(rect_ui16_t rc, const unichar *str, const font_t *pf, co
     return true;
 }
 
+void draw_button_background(const rect_ui16_t *r_out, const rect_ui16_t *r_in, color_t color) {
+    if (!rect_in_rect_ui16(*r_in, *r_out))
+        return;
+    /// top
+    const rect_ui16_t rc_t = { uint16_t(r_out->x + 3), uint16_t(r_out->y + 3), uint16_t(r_out->w - 6), uint16_t(r_in->y - r_out->y - 3) };
+    display::FillRect(rc_t, color);
+    /// bottom
+    const rect_ui16_t rc_b = { uint16_t(r_out->x + 3), uint16_t(r_in->y + r_in->h), uint16_t(r_out->w - 6), uint16_t((r_out->y + r_out->h) - (r_in->y + r_in->h) - 3) };
+    display::FillRect(rc_b, color);
+    /// left
+    const rect_ui16_t rc_l = { uint16_t(r_out->x + 3), r_in->y, uint16_t(r_in->x - r_out->x - 3), r_in->h };
+    display::FillRect(rc_l, color);
+    /// right
+    const rect_ui16_t rc_r = { uint16_t(r_in->x + r_in->w), r_in->y, uint16_t((r_out->x + r_out->w) - (r_in->x + r_in->w) - 3), r_in->h };
+    display::FillRect(rc_r, color);
+
+    // Round edges
+
+    // // // // // // // // // // //
+    // .  .  .  .  .  .  .  .  .  x
+    // .  .  .  .  .  .  x  x  x
+    // .  .  .  .  x  x  x  x
+    // .  .  .  x  x  x  x
+    // .  .  x  x  x  x
+    // .  .  x  x  x
+    // .  x  x  x
+    // .  x  x
+    // .  x
+    // x
+
+    const uint16_t cut[] = { 4, 6, 9 };
+
+    // left edge
+    for (int i = 0; i < 3; i++) {
+        display::DrawLine(point_ui16(r_out->x + i, r_out->y + cut[2 - i]), point_ui16(r_out->x + i, r_out->y + r_out->h - cut[2 - i]), color);
+    }
+    // right edge
+    for (int i = 0; i < 3; i++) {
+        display::DrawLine(point_ui16(r_out->x + r_out->w - (3 - i), r_out->y + cut[i]), point_ui16(r_out->x + r_out->w - (3 - i), r_out->y + r_out->h - cut[i]), color);
+    }
+    // top edge
+    for (int i = 0; i < 3; i++) {
+        display::DrawLine(point_ui16(r_out->x + cut[2 - i], r_out->y + i), point_ui16(r_out->x + r_out->w - cut[2 - i], r_out->y + i), color);
+    }
+    // bottom edge
+    for (int i = 0; i < 3; i++) {
+        display::DrawLine(point_ui16(r_out->x + cut[i], r_out->y + r_out->h - (3 - i)), point_ui16(r_out->x + r_out->w - cut[i], r_out->y + r_out->h - (3 - i)), color);
+    }
+}
+
 /// Fills space between two rectangles with a color
 /// @r_in must be completely in @r_out
 void fill_between_rectangles(const rect_ui16_t *r_out, const rect_ui16_t *r_in, color_t color) {
@@ -248,7 +298,12 @@ void render_icon_align(rect_ui16_t rc, uint16_t id_res, color_t clr0, uint16_t f
     if (wh_ico.x && wh_ico.y) {
         rect_ui16_t rc_ico = rect_align_ui16(rc, rect_ui16(0, 0, wh_ico.x, wh_ico.y), flags & ALIGN_MASK);
         rc_ico = rect_intersect_ui16(rc, rc_ico);
-        fill_between_rectangles(&rc, &rc_ico, opt_clr);
+        if ((flags >> 8) & ROPFN_FRAME) {
+            draw_button_background(&rc, &rc_ico, opt_clr);
+            flags &= ~(ROPFN_FRAME << 8);
+        } else {
+            fill_between_rectangles(&rc, &rc_ico, opt_clr);
+        }
         display::DrawIcon(point_ui16(rc_ico.x, rc_ico.y), id_res, clr0, (flags >> 8) & 0x0f);
     } else
         display::FillRect(rc, opt_clr);

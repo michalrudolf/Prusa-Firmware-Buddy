@@ -101,23 +101,24 @@ void window_icon_button_t::windowEvent(window_t *sender, uint8_t event, void *pa
     }
 }
 
-void window_icon_button_t::draw() {
-    if (IsInvalid()) {
-        uint8_t raster_operations = 0;
-        if (IsShadowed()) {
-            raster_operations |= ROPFN_DISABLE;
-            color_back = COLOR_BLACK;
-        } else if (IsFocused()) {
-            raster_operations |= ROPFN_SWAPBW;
+void window_icon_button_t::unconditionalDraw() {
+
+    uint8_t raster_operations = 0;
+    if (IsShadowed()) {
+        raster_operations |= ROPFN_DISABLE;
+        color_back = COLOR_BLACK;
+    } else {
+        if (IsFocused()) {
+            raster_operations |= (ROPFN_SWAPBW | ROPFN_FRAME);
             color_back = COLOR_BLACK; // Icon stayes black and SWAPBlackWhite will make white bg
         } else {
+            raster_operations |= ROPFN_FRAME;
             color_back = COLOR_DARK_GRAY;
         }
-
-        render_icon_align(rect, id_res, color_back,
-            RENDER_FLG(alignment, raster_operations));
-        Validate();
     }
+
+    render_icon_align(rect, id_res, color_back,
+        RENDER_FLG(alignment, raster_operations));
 }
 
 /*****************************************************************************/

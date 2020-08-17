@@ -31,6 +31,7 @@
 #define ROPFN_INVERT  0x01 //invert
 #define ROPFN_SWAPBW  0x02 //swap black-white
 #define ROPFN_DISABLE 0x04 //disables (darker colors)
+#define ROPFN_FRAME   0x08 //flag to draw frame with circular edges
 
 //font flags
 #define FONT_FLG_SWAP 0x00000001 // swap low/high byte

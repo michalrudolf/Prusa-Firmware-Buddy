@@ -28,7 +28,7 @@ struct window_icon_button_t : public window_icon_t {
 
 protected:
     virtual void windowEvent(window_t *sender, uint8_t event, void *param) override;
-    virtual void draw() override;
+    virtual void unconditionalDraw() override;
 };
 
 class window_icon_hourglass_t : public window_icon_t {
