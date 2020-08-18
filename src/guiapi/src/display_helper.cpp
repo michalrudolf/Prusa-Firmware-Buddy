@@ -11,8 +11,16 @@
 #include "../lang/unaccent.hpp"
 #include "../common/str_utils.hpp"
 #include "ScreenHandler.hpp"
+#include <math.h>
 
 //#define UNACCENT
+
+// Readable macros for draw_button_background():
+//  describes the edges for icon's corner goniometric calculation (round edges of the buttons)
+#define RIGHT_EDGE_X  (r_out->x + r_out->w - CORNER_RADIUS)
+#define LEFT_EDGE_X   (r_out->x + CORNER_RADIUS)
+#define UPPER_EDGE_Y  (r_out->y + CORNER_RADIUS)
+#define BOTTOM_EDGE_Y (r_out->y + r_out->h - CORNER_RADIUS)
 
 #ifdef UNACCENT
 std::pair<const char *, uint8_t> ConvertUnicharToFontCharIndex(unichar c) {
@@ -109,52 +117,49 @@ bool render_textUnicode(rect_ui16_t rc, const unichar *str, const font_t *pf, co
 }
 
 void draw_button_background(const rect_ui16_t *r_out, const rect_ui16_t *r_in, color_t color) {
+
     if (!rect_in_rect_ui16(*r_in, *r_out))
         return;
+
+#define CORNER_RADIUS 8
+
     /// top
-    const rect_ui16_t rc_t = { uint16_t(r_out->x + 3), uint16_t(r_out->y + 3), uint16_t(r_out->w - 6), uint16_t(r_in->y - r_out->y - 3) };
+    const rect_ui16_t rc_t = { uint16_t(r_out->x + CORNER_RADIUS), uint16_t(r_out->y), uint16_t(r_out->w - 2 * CORNER_RADIUS), uint16_t(r_in->y - r_out->y) };
     display::FillRect(rc_t, color);
     /// bottom
-    const rect_ui16_t rc_b = { uint16_t(r_out->x + 3), uint16_t(r_in->y + r_in->h), uint16_t(r_out->w - 6), uint16_t((r_out->y + r_out->h) - (r_in->y + r_in->h) - 3) };
+    const rect_ui16_t rc_b = { uint16_t(r_out->x + CORNER_RADIUS), uint16_t(r_in->y + r_in->h), uint16_t(r_out->w - 2 * CORNER_RADIUS), uint16_t((r_out->y + r_out->h) - (r_in->y + r_in->h)) };
     display::FillRect(rc_b, color);
     /// left
-    const rect_ui16_t rc_l = { uint16_t(r_out->x + 3), r_in->y, uint16_t(r_in->x - r_out->x - 3), r_in->h };
+    const rect_ui16_t rc_l = { uint16_t(r_out->x), uint16_t(r_out->y + CORNER_RADIUS), uint16_t(r_in->x - r_out->x), uint16_t(r_out->h - 2 * CORNER_RADIUS) };
     display::FillRect(rc_l, color);
     /// right
-    const rect_ui16_t rc_r = { uint16_t(r_in->x + r_in->w), r_in->y, uint16_t((r_out->x + r_out->w) - (r_in->x + r_in->w) - 3), r_in->h };
+    const rect_ui16_t rc_r = { uint16_t(r_in->x + r_in->w), uint16_t(r_out->y + CORNER_RADIUS), uint16_t((r_out->x + r_out->w) - (r_in->x + r_in->w)), uint16_t(r_out->h - 2 * CORNER_RADIUS) };
     display::FillRect(rc_r, color);
 
-    // Round edges
+    for (int row = 0; row < CORNER_RADIUS; row++) {
+        int cnt = 0; // number of pixels that will be drawn (in one line)
+        for (int col = 0; col < CORNER_RADIUS; col++) {
+            double y_fn_res = cos((double)col * M_PI / (2 * CORNER_RADIUS));
+            double x_fn_cmp = (double)row * (double)1 / (double)CORNER_RADIUS;
+            y_fn_res = std::ceil(y_fn_res * 100.0) / 100.0;  // round up for Y axis
+            x_fn_cmp = std::floor(x_fn_cmp * 100.0) / 100.0; // round down for X axis
+            if (x_fn_cmp < y_fn_res) {
+                cnt++;
+            } else {
+                break;
+            }
+        }
 
-    // // // // // // // // // // //
-    // .  .  .  .  .  .  .  .  .  x
-    // .  .  .  .  .  .  x  x  x
-    // .  .  .  .  x  x  x  x
-    // .  .  .  x  x  x  x
-    // .  .  x  x  x  x
-    // .  .  x  x  x
-    // .  x  x  x
-    // .  x  x
-    // .  x
-    // x
-
-    const uint16_t cut[] = { 4, 6, 9 };
-
-    // left edge
-    for (int i = 0; i < 3; i++) {
-        display::DrawLine(point_ui16(r_out->x + i, r_out->y + cut[2 - i]), point_ui16(r_out->x + i, r_out->y + r_out->h - cut[2 - i]), color);
-    }
-    // right edge
-    for (int i = 0; i < 3; i++) {
-        display::DrawLine(point_ui16(r_out->x + r_out->w - (3 - i), r_out->y + cut[i]), point_ui16(r_out->x + r_out->w - (3 - i), r_out->y + r_out->h - cut[i]), color);
-    }
-    // top edge
-    for (int i = 0; i < 3; i++) {
-        display::DrawLine(point_ui16(r_out->x + cut[2 - i], r_out->y + i), point_ui16(r_out->x + r_out->w - cut[2 - i], r_out->y + i), color);
-    }
-    // bottom edge
-    for (int i = 0; i < 3; i++) {
-        display::DrawLine(point_ui16(r_out->x + cut[i], r_out->y + r_out->h - (3 - i)), point_ui16(r_out->x + r_out->w - cut[i], r_out->y + r_out->h - (3 - i)), color);
+        if (cnt > 0) {
+            display::DrawLine(point_ui16(RIGHT_EDGE_X, UPPER_EDGE_Y - row - 1),
+                point_ui16(RIGHT_EDGE_X + cnt - 1, UPPER_EDGE_Y - row - 1), color);
+            display::DrawLine(point_ui16(LEFT_EDGE_X - CORNER_RADIUS + (CORNER_RADIUS - cnt), UPPER_EDGE_Y - row - 1),
+                point_ui16(LEFT_EDGE_X, UPPER_EDGE_Y - row - 1), color);
+            display::DrawLine(point_ui16(LEFT_EDGE_X - CORNER_RADIUS + (CORNER_RADIUS - cnt), BOTTOM_EDGE_Y + row),
+                point_ui16(LEFT_EDGE_X, BOTTOM_EDGE_Y + row), color);
+            display::DrawLine(point_ui16(RIGHT_EDGE_X, BOTTOM_EDGE_Y + row),
+                point_ui16(RIGHT_EDGE_X + cnt - 1, BOTTOM_EDGE_Y + row), color);
+        }
     }
 }
 
