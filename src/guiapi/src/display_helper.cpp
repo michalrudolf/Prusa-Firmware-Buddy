@@ -121,7 +121,7 @@ void draw_button_background(const rect_ui16_t *r_out, const rect_ui16_t *r_in, c
     if (!rect_in_rect_ui16(*r_in, *r_out))
         return;
 
-#define CORNER_RADIUS 8
+#define CORNER_RADIUS 16
 
     /// top
     const rect_ui16_t rc_t = { uint16_t(r_out->x + CORNER_RADIUS), uint16_t(r_out->y), uint16_t(r_out->w - 2 * CORNER_RADIUS), uint16_t(r_in->y - r_out->y) };
@@ -139,14 +139,8 @@ void draw_button_background(const rect_ui16_t *r_out, const rect_ui16_t *r_in, c
     for (int row = 0; row < CORNER_RADIUS; row++) {
         int cnt = 0; // number of pixels that will be drawn (in one line)
         for (int col = 0; col < CORNER_RADIUS; col++) {
-            double y_fn_res = cos((double)col * M_PI / (2 * CORNER_RADIUS));
-            double x_fn_cmp = (double)row * (double)1 / (double)CORNER_RADIUS;
-            y_fn_res = std::ceil(y_fn_res * 100.0) / 100.0;  // round up for Y axis
-            x_fn_cmp = std::floor(x_fn_cmp * 100.0) / 100.0; // round down for X axis
-            if (x_fn_cmp < y_fn_res) {
+            if (pow(col, 2) + pow(row, 2) <= pow(CORNER_RADIUS, 2)) {
                 cnt++;
-            } else {
-                break;
             }
         }
 
