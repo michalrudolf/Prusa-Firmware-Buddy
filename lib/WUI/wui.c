@@ -77,7 +77,8 @@ void StartWebServerTask(void const *argument) {
     if (load_ini_file(&wui_eth_config)) {
         save_eth_params(&wui_eth_config);
     }
-    wui_eth_config.var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS);
+    wui_eth_config.var_mask = ETHVAR_MSK(ETHVAR_LAN_FLAGS) | ETHVAR_MSK(ETHVAR_HOSTNAME) | ETHVAR_MSK(ETHVAR_DNS1_IP4)
+        | ETHVAR_MSK(ETHVAR_DNS2_IP4) | ETHVAR_MSK(ETHVAR_LAN_ADDR_IP4) | ETHVAR_MSK(ETHVAR_LAN_MSK_IP4) | ETHVAR_MSK(ETHVAR_LAN_GW_IP4);
     load_eth_params(&wui_eth_config);
     // mutex for passing marlin variables to tcp thread
     wui_thread_mutex_id = osMutexCreate(osMutex(wui_thread_mutex));
