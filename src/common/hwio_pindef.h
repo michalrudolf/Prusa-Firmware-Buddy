@@ -393,6 +393,23 @@ inline constexpr SPI_HandleTypeDef *hw_get_spi_side_strip() {
     #else
         #error "Unknown board."
     #endif // #if (BOARD_TYPE == BUDDY_BOARD)
+
+    #if BOARD_IS_XBUDDY || BOARD_IS_XLBUDDY
+        #include "TCA6408A.hpp"
+        #define EXPANDER_PIN_TABLE(MACRO_FUNCTION) \
+            MACRO_FUNCTION(buddy::hw::TCA6408AOutputPin, expanderOutput1, buddy::hw::IoPin::p0, Pin::State::high COMMA io_expander, buddy::hw::noHandler) \
+            MACRO_FUNCTION(buddy::hw::TCA6408AOutputPin, expanderOutput2, buddy::hw::IoPin::p1, Pin::State::high COMMA io_expander, buddy::hw::noHandler) \
+            MACRO_FUNCTION(buddy::hw::TCA6408AOutputPin, expanderOutput3, buddy::hw::IoPin::p2, Pin::State::high COMMA io_expander, buddy::hw::noHandler) \
+            MACRO_FUNCTION(buddy::hw::TCA6408AOutputPin, expanderOutput4, buddy::hw::IoPin::p3, Pin::State::high COMMA io_expander, buddy::hw::noHandler) \
+            MACRO_FUNCTION(buddy::hw::TCA6408AOutputPin, expanderOutput5, buddy::hw::IoPin::p4, Pin::State::high COMMA io_expander, buddy::hw::noHandler) \
+            MACRO_FUNCTION(buddy::hw::TCA6408AOutputPin, expanderOutput6, buddy::hw::IoPin::p5, Pin::State::high COMMA io_expander, buddy::hw::noHandler) \
+            MACRO_FUNCTION(buddy::hw::TCA6408AOutputPin, expanderOutput7, buddy::hw::IoPin::p6, Pin::State::high COMMA io_expander, buddy::hw::noHandler) \
+            MACRO_FUNCTION(buddy::hw::TCA6408AOutputPin, expanderOutput8, buddy::hw::IoPin::p7, Pin::State::high COMMA io_expander, buddy::hw::noHandler)
+
+        namespace buddy::hw {
+            extern TCA6408A io_expander;
+        }
+    #endif
 // clang-format on
 
 /**
@@ -519,6 +536,9 @@ namespace buddy::hw {
 PIN_TABLE(DECLARE_PINS)
 #if defined(EXTENDER_PIN_TABLE)
 EXTENDER_PIN_TABLE(DECLARE_PINS)
+#endif
+#if defined(EXPANDER_PIN_TABLE)
+EXPANDER_PIN_TABLE(DECLARE_PINS)
 #endif
 VIRTUAL_PIN_TABLE(DECLARE_VIRTUAL_PINS)
 

@@ -25,6 +25,10 @@
 #if ENABLED(EXPERIMENTAL_I2CBUS)
 
 #include "twibus.h"
+#include "hwio_pindef.h"
+#include "i2c.hpp"
+
+static constexpr uint16_t i2c_timeout = 100;
 
 FORCE_INLINE char hex_nybble(const uint8_t n) {
   return (n & 0xF) + ((n & 0xF) < 10 ? '0' : 'A' - 10);
@@ -54,13 +58,30 @@ uint8_t TWIBus::read_buffer_read_byte() {
   return read_buffer[read_buffer_pos++];
 }
 
-void TWIBus::address(const uint8_t adr) {
-  if (!WITHIN(adr, 8, 127))
+bool TWIBus::address(const uint8_t adr) {
+  if (!WITHIN(adr, 8, 127)) {
     SERIAL_ECHO_MSG("Bad I2C address (8-127)");
+    return false;
+  }
+  
+  /*
+   *  Restricted addresses:
+   *    (EEPOM addresses are higher than 127 anyway)
+   *    EepromCommandWrite (uint16_t)
+   *      write_addr_memory = 0xA6;
+   *      write_addr_registers = 0xAE;
+   *    EepromCommandRead (uint16_t)
+   *      read_addr_memory = 0xA7;
+   *      read_addr_registers = 0xAF;
+   *
+   *  Special address list:
+   *    IO Expander TCA6408A with 8 pins: 0x40 - 0x48
+  */
 
   addr = adr;
 
   debug(F("address"), adr);
+  return true;
 }
 
 void TWIBus::addbyte(const char c) {
@@ -82,26 +103,55 @@ void TWIBus::addstring(char str[]) {
 void TWIBus::send() {
   debug(F("send"), addr);
   
-  HAL_StatusTypeDef ret = HAL_I2C_Master_Transmit(&hi2c2, addr << 1, buffer, buffer_s, 100);
-  reset();
+  switch (addr) {
+  case buddy::hw::expanderOutput1.slave_address:
+    buddy::hw::expanderOutput1.write(buffer[0] ? buddy::hw::Pin::State::high : buddy::hw::Pin::State::low);
+    break;
+  case buddy::hw::expanderOutput2.slave_address:
+    buddy::hw::expanderOutput2.write(buffer[0] ? buddy::hw::Pin::State::high : buddy::hw::Pin::State::low);
+    break;
+  case buddy::hw::expanderOutput3.slave_address:
+    buddy::hw::expanderOutput3.write(buffer[0] ? buddy::hw::Pin::State::high : buddy::hw::Pin::State::low);
+    break;
+  case buddy::hw::expanderOutput4.slave_address:
+    buddy::hw::expanderOutput4.write(buffer[0] ? buddy::hw::Pin::State::high : buddy::hw::Pin::State::low);
+    break;
+  case buddy::hw::expanderOutput5.slave_address:
+    buddy::hw::expanderOutput5.write(buffer[0] ? buddy::hw::Pin::State::high : buddy::hw::Pin::State::low);
+    break;
+  case buddy::hw::expanderOutput6.slave_address:
+    buddy::hw::expanderOutput6.write(buffer[0] ? buddy::hw::Pin::State::high : buddy::hw::Pin::State::low);
+    break;
+  case buddy::hw::expanderOutput7.slave_address:
+    buddy::hw::expanderOutput7.write(buffer[0] ? buddy::hw::Pin::State::high : buddy::hw::Pin::State::low);
+    break;
+  case buddy::hw::expanderOutput8.slave_address:
+    buddy::hw::expanderOutput8.write(buffer[0] ? buddy::hw::Pin::State::high : buddy::hw::Pin::State::low);
+    break;
+  }
 
-  check_hal_response(ret);
+  if (addr < buddy::hw::expanderOutput1.slave_address || addr > buddy::hw::expanderOutput8.slave_address) {
+    // Unkown address
+    i2c::Result ret = i2c::Transmit(hi2c2, addr << 1, buffer, buffer_s, i2c_timeout);
+    check_hal_response(ret);
+  }
+
+  reset();
 }
 
-bool TWIBus::check_hal_response(HAL_StatusTypeDef response) {
-  if (response == HAL_StatusTypeDef::HAL_OK) {
+bool TWIBus::check_hal_response(i2c::Result response) {
+  if (response == i2c::Result::ok) {
     return true;
   }
 
-  switch (response)
-  {
-  case HAL_StatusTypeDef::HAL_ERROR:
+  switch (response) {
+  case i2c::Result::error:
     SERIAL_ERROR_MSG("TWIBus::send failed with: ERROR");
     break;
-  case HAL_StatusTypeDef::HAL_BUSY:
+  case i2c::Result::busy_after_retries:
     SERIAL_ERROR_MSG("TWIBus::send failed with: BUSY");
     break;
-  case HAL_StatusTypeDef::HAL_TIMEOUT:
+  case i2c::Result::timeout:
      SERIAL_ERROR_MSG("TWIBus::send failed with: TIMEOUT");
     break;
   default:
@@ -166,8 +216,8 @@ bool TWIBus::request(const uint8_t bytes) {
 
   flush();
 
-  HAL_StatusTypeDef ret = HAL_I2C_Master_Receive(&hi2c2, addr << 1, read_buffer, bytes, 100);
-
+  i2c::Result ret = i2c::Receive(hi2c2, addr << 1, read_buffer, bytes, i2c_timeout);
+  
   if (!check_hal_response(ret)) {
     return false;
   }

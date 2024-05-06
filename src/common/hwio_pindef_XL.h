@@ -163,7 +163,7 @@ inline Pin::State xyProbeReadFn();
 
 namespace buddy::hw {
 
-extern PCA9557 io_expander1;
+extern PCA9557 io_extender;
 
 // Following pins are connected differently depending on HW revision -> we'll determine where they are during runtime in hwio_configure_board_revision_changed_pins
 extern const OutputPin *Buzzer;
@@ -175,14 +175,14 @@ extern const OutputPin *YStep;
 
 // clang-format off
 #define EXTENDER_PIN_TABLE(MACRO_FUNCTION) \
-    MACRO_FUNCTION(buddy::hw::PCA9557OutputPin, dwarf6Reset, buddy::hw::IoPin::p0, Pin::State::low COMMA io_expander1, buddy::hw::noHandler) \
-    MACRO_FUNCTION(buddy::hw::PCA9557OutputPin, dwarf1Reset, buddy::hw::IoPin::p1, Pin::State::low COMMA io_expander1, buddy::hw::noHandler) \
-    MACRO_FUNCTION(buddy::hw::PCA9557OutputPin, dwarf2Reset, buddy::hw::IoPin::p2, Pin::State::low COMMA io_expander1, buddy::hw::noHandler) \
-    MACRO_FUNCTION(buddy::hw::PCA9557OutputPin, dwarf3Reset, buddy::hw::IoPin::p3, Pin::State::low COMMA io_expander1, buddy::hw::noHandler) \
-    MACRO_FUNCTION(buddy::hw::PCA9557OutputPin, dwarf4Reset, buddy::hw::IoPin::p4, Pin::State::low COMMA io_expander1, buddy::hw::noHandler) \
-    MACRO_FUNCTION(buddy::hw::PCA9557OutputPin, dwarf5Reset, buddy::hw::IoPin::p5, Pin::State::low COMMA io_expander1, buddy::hw::noHandler) \
-    MACRO_FUNCTION(buddy::hw::PCA9557OutputPin, fanPowerSwitch, buddy::hw::IoPin::p6, Pin::State::low COMMA io_expander1, buddy::hw::noHandler) \
-    MACRO_FUNCTION(buddy::hw::PCA9557OutputPin, modularBedReset, buddy::hw::IoPin::p7, Pin::State::low COMMA io_expander1, buddy::hw::noHandler)
+    MACRO_FUNCTION(buddy::hw::PCA9557OutputPin, dwarf6Reset, buddy::hw::IoPin::p0, Pin::State::low COMMA io_extender, buddy::hw::noHandler) \
+    MACRO_FUNCTION(buddy::hw::PCA9557OutputPin, dwarf1Reset, buddy::hw::IoPin::p1, Pin::State::low COMMA io_extender, buddy::hw::noHandler) \
+    MACRO_FUNCTION(buddy::hw::PCA9557OutputPin, dwarf2Reset, buddy::hw::IoPin::p2, Pin::State::low COMMA io_extender, buddy::hw::noHandler) \
+    MACRO_FUNCTION(buddy::hw::PCA9557OutputPin, dwarf3Reset, buddy::hw::IoPin::p3, Pin::State::low COMMA io_extender, buddy::hw::noHandler) \
+    MACRO_FUNCTION(buddy::hw::PCA9557OutputPin, dwarf4Reset, buddy::hw::IoPin::p4, Pin::State::low COMMA io_extender, buddy::hw::noHandler) \
+    MACRO_FUNCTION(buddy::hw::PCA9557OutputPin, dwarf5Reset, buddy::hw::IoPin::p5, Pin::State::low COMMA io_extender, buddy::hw::noHandler) \
+    MACRO_FUNCTION(buddy::hw::PCA9557OutputPin, fanPowerSwitch, buddy::hw::IoPin::p6, Pin::State::low COMMA io_extender, buddy::hw::noHandler) \
+    MACRO_FUNCTION(buddy::hw::PCA9557OutputPin, modularBedReset, buddy::hw::IoPin::p7, Pin::State::low COMMA io_extender, buddy::hw::noHandler)
 
 #define VIRTUAL_PIN_TABLE(MACRO_FUNCTION) \
     MACRO_FUNCTION(buddy::hw::VirtualInterruptPin, buddy::hw::zMinReadFn, endstop_ISR, zMin, BUDDY_PIN(Z_MIN), IMode::IT_rising_falling) \

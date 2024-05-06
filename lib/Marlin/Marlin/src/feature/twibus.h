@@ -22,7 +22,7 @@
 #pragma once
 
 #include "../core/macros.h"
-
+#include "i2c.hpp"
 #include <Wire.h>
 
 #ifndef I2C_ADDRESS
@@ -89,7 +89,7 @@ class TWIBus {
 
     uint8_t read_buffer_read_byte();
 
-    bool check_hal_response(HAL_StatusTypeDef response);
+    bool check_hal_response(i2c::Result response);
 
   public:
     /**
@@ -145,12 +145,13 @@ class TWIBus {
     void addstring(char str[]);
 
     /**
-     * @brief Set the target slave address
+     * @brief Set the target slave address (if address is not restricted)
      * @details The target slave address for sending the full packet
      *
      * @param adr 7-bit integer address
+     * @return true if target slave address setting was successful
      */
-    void address(const uint8_t adr);
+    bool address(const uint8_t adr);
 
     /**
      * @brief Echo data on the bus to serial

@@ -10,6 +10,7 @@
 #include "adc.hpp"
 #include "timer_defaults.h"
 #include "PCA9557.hpp"
+#include "TCA6408A.hpp"
 #include "log.h"
 #include "timing_precise.hpp"
 #include "data_exchange.hpp"
@@ -100,11 +101,14 @@ TIM_HandleTypeDef htim14;
 RTC_HandleTypeDef hrtc;
 RNG_HandleTypeDef hrng;
 
-#if BOARD_IS_XLBUDDY
+#if BOARD_IS_XBUDDY || BOARD_IS_XLBUDDY
 namespace buddy::hw {
-PCA9557 io_expander1(I2C_HANDLE_FOR(io_extender), 0x1);
-}
-#endif
+TCA6408A io_expander(I2C_HANDLE_FOR(io_expander), 0x1);
+    #if BOARD_IS_XLBUDDY
+PCA9557 io_extender(I2C_HANDLE_FOR(io_extender), 0x1);
+    #endif // BOARD_IS_XLBUDDY
+} // namespace buddy::hw
+#endif // BOARD_IS_XBUDDY || BOARD_IS_XLBUDDY
 
 //
 // Initialization
@@ -195,8 +199,11 @@ void hw_gpio_init() {
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
     PIN_TABLE(CONFIGURE_PINS);
-#if defined(EXTENDER_PIN_TABLE)
-    EXTENDER_PIN_TABLE(CONFIGURE_PINS);
+#if defined(EXPANDER1_PIN_TABLE)
+    EXPANDER1_PIN_TABLE(CONFIGURE_PINS);
+#endif
+#if defined(EXPANDER2_PIN_TABLE)
+    EXPANDER2_PIN_TABLE(CONFIGURE_PINS);
 #endif
 
     buddy::hw::hwio_configure_board_revision_changed_pins();
